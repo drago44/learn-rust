@@ -49,6 +49,50 @@ pub fn run() {
     let combined = format!("{greeting} | {message}");
     println!("{combined}");
 
+    // --- bool та char ---
+    // bool — true або false, 1 байт. Результат порівнянь, умов, match.
+    // char — один Unicode символ, 4 байти. Позначається одинарними лапками.
+    //        Не плутати з &str/"..." — рядок це послідовність символів, char це один.
+    let is_active: bool = true;
+    let letter: char = 'R';
+    let emoji: char = '🦀'; // char = Unicode scalar value, не тільки ASCII
+    println!("active={is_active}, letter={letter}, emoji={emoji}");
+
+    // --- const — справжня константа ---
+    // const vs let:
+    //   const — обов'язково вказати тип, значення відоме на етапі компіляції,
+    //           живе весь час роботи програми, імена SCREAMING_SNAKE_CASE.
+    //   let   — тип може вивести компілятор, значення може бути з рантайму.
+    // const не можна mut, не можна shadowing.
+    const MAX_PLAYERS: u32 = 100;
+    println!("MAX_PLAYERS = {MAX_PLAYERS}");
+
+    // --- Tuple — фіксована група різних типів ---
+    // Корисний коли функція має повернути кілька значень.
+    // Доступ до елементів через .0, .1, .2 або деструктуризацію.
+    let point: (i32, i32) = (10, 20);
+    println!("point.0 = {}, point.1 = {}", point.0, point.1);
+
+    // Деструктуризація — розпаковка в окремі змінні
+    let (x_coord, y_coord) = point;
+    println!("x={x_coord}, y={y_coord}");
+
+    // Tuple з різними типами
+    let user: (&str, u64, bool) = ("Alice", 1000, true);
+    let (name, balance, active) = user;
+    println!("name={name}, balance={balance}, active={active}");
+
+    // --- Array — фіксований розмір, один тип, живе на стеку ---
+    // [тип; кількість] — розмір є частиною типу, [i32; 3] != [i32; 5].
+    // Для динамічного розміру є Vec<T> — це буде пізніше.
+    let numbers: [i32; 5] = [1, 2, 3, 4, 5];
+    println!("перший = {}, третій = {}", numbers[0], numbers[2]);
+    println!("довжина = {}", numbers.len());
+
+    // Створення масиву з однаковими значеннями
+    let zeros = [0u8; 10]; // 10 нулів типу u8
+    println!("zeros: {:?}", zeros); // {:?} — Debug формат для масивів
+
     // --- Оператори ---
     let a = 10;
     let b = 3;
