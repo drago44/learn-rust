@@ -2,9 +2,15 @@ mod lesson01;
 mod lesson02;
 mod lesson03;
 mod lesson04;
+mod lesson05;
 
 fn main() {
     println!("============================================================");
+    println!("Урок 5 — Collections (Vec, HashMap, String)");
+    println!("============================================================");
+    lesson05::run();
+
+    println!("\n============================================================");
     println!("Урок 4 — Error Handling (Result<T, E>)");
     println!("============================================================");
     lesson04::run();
