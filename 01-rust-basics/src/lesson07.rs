@@ -161,6 +161,7 @@ mod auth {
 
     pub mod roles {
         // pub(super) — видиме тільки в mod auth (батько roles)
+        #[allow(dead_code)]
         pub(super) fn is_admin(user: &str) -> bool {
             user == "admin"
         }
@@ -233,6 +234,7 @@ mod config {
 
     // Enum — на відміну від struct, варіанти pub enum ВСІ публічні
     #[derive(Debug)]
+    #[allow(dead_code)]
     pub enum Environment {
         Development,
         Staging,
