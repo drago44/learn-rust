@@ -22,6 +22,9 @@ pub fn run() {
     println!("\n=== @ bindings ===");
     lesson_at_bindings();
 
+    println!("\n=== ref та ref mut в patterns ===");
+    lesson_ref_patterns();
+
     println!("\n=== Patterns у let, for, fn ===");
     lesson_patterns_everywhere();
 
@@ -295,6 +298,77 @@ fn lesson_at_bindings() {
             }
         }
     }
+}
+
+// ============================================================
+// ref та ref mut В PATTERNS
+// ============================================================
+//
+// `ref` — позичаємо значення в pattern замість переміщення.
+// Потрібно коли хочемо зіставити pattern але НЕ переміщувати дані.
+//
+// Сучасний Rust рідко потребує `ref` явно — match автоматично
+// позичає при `match &value`. Але `ref` досі корисний у let-bindings.
+
+fn lesson_ref_patterns() {
+    // Без ref — String переміщується
+    let s = String::from("hello");
+    // let first_char = match s { ... }; // s переміщується — потім недоступне
+
+    // З ref — отримуємо посилання, s залишається доступним
+    let first_char = match &s {
+        val if !val.is_empty() => &val[..1],
+        _ => "",
+    };
+    println!("  перший символ: {first_char}");
+    println!("  s ще доступне: {s}"); // ОК
+
+    // ref у let-binding
+    let value = String::from("world");
+    let ref r = value; // r: &String, value не переміщено
+    println!("  ref binding: {r}");
+    println!("  value: {value}"); // ОК
+
+    // ref mut — змінне позичання в pattern
+    let mut nums = vec![1, 2, 3];
+    let ref mut v = nums;
+    v.push(4);
+    println!("  ref mut push: {v:?}");
+    let _ = v; // відпускаємо borrow
+    println!("  nums: {nums:?}");
+
+    // ref у match owned значення — без переміщення
+    #[derive(Debug)]
+    enum Payload {
+        Text(String),
+        Number(i32),
+    }
+
+    let payload = Payload::Text(String::from("alpha"));
+
+    // Без ref — String переміщується у s, payload стає недоступним
+    // match payload { Payload::Text(s) => ... }  // payload moved
+
+    // З ref — позичаємо String, payload залишається
+    match payload {
+        Payload::Text(ref s) => println!("  text ref: {s}"), // s: &String
+        Payload::Number(n) => println!("  num: {n}"),
+    }
+    println!("  payload ще доступний: {payload:?}"); // ОК
+
+    // Сучасна альтернатива: match &payload (match ergonomics)
+    // При `for p in &vec` — ref більше не потрібен, Rust робить це автоматично
+    let payloads = vec![
+        Payload::Text(String::from("beta")),
+        Payload::Number(42),
+    ];
+    for p in &payloads {
+        match p {
+            Payload::Text(s) => println!("  auto-ref text: {s}"), // s: &String автоматично
+            Payload::Number(n) => println!("  num: {n}"),
+        }
+    }
+    println!("  payloads.len(): {}", payloads.len());
 }
 
 // ============================================================
