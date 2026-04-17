@@ -3,6 +3,7 @@ CLAUDE.md
 
 # Rust build artifacts
 target/
+temp/
 
 # IDE
 .idea/
