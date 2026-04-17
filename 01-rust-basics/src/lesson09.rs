@@ -197,7 +197,7 @@ fn lesson_move_closure() {
     // move closure що повертається з функції
     let add5 = make_adder(5);
     let add10 = make_adder(10);
-    println!("  add5(3) = {}", add5(3));   // 8
+    println!("  add5(3) = {}", add5(3)); // 8
     println!("  add10(3) = {}", add10(3)); // 13
 
     // name переміщена в closure — greeter живе незалежно
@@ -297,7 +297,11 @@ fn lesson_iterator_consumers() {
     println!("  first > 3: {first_gt3:?}, at index: {pos_gt3:?}");
 
     // min та max
-    println!("  min: {:?}, max: {:?}", numbers.iter().min(), numbers.iter().max());
+    println!(
+        "  min: {:?}, max: {:?}",
+        numbers.iter().min(),
+        numbers.iter().max()
+    );
 
     // fold — найбільш гнучкий consumer
     // fold(початок, |акумулятор, елемент| новий_акумулятор)
@@ -370,7 +374,10 @@ fn lesson_iterator_advanced() {
     // flat_map — map + flatten
     // Корисно коли кожен елемент розгортається у кілька
     let sentences = vec!["hello world", "rust is great"];
-    let words: Vec<&str> = sentences.iter().flat_map(|s| s.split_whitespace()).collect();
+    let words: Vec<&str> = sentences
+        .iter()
+        .flat_map(|s| s.split_whitespace())
+        .collect();
     println!("  flat_map words: {words:?}");
 
     // zip — пари з двох ітераторів (обрізає до коротшого)

@@ -21,7 +21,10 @@ pub fn run() {
     println!("  add(2, 3) = {}", add(2, 3));
     println!("  divide(10, 2) = {:?}", divide(10.0, 2.0));
     println!("  divide(10, 0) = {:?}", divide(10.0, 0.0));
-    println!("  is_palindrome(\"racecar\") = {}", is_palindrome("racecar"));
+    println!(
+        "  is_palindrome(\"racecar\") = {}",
+        is_palindrome("racecar")
+    );
     println!("  is_palindrome(\"hello\") = {}", is_palindrome("hello"));
     println!("  fizzbuzz(15) = {}", fizzbuzz(15));
 }
@@ -136,7 +139,9 @@ mod unit_tests {
 
     #[test]
     fn test_fizzbuzz_range() {
-        let expected = ["1", "2", "Fizz", "4", "Buzz", "Fizz", "7", "8", "Fizz", "Buzz"];
+        let expected = [
+            "1", "2", "Fizz", "4", "Buzz", "Fizz", "7", "8", "Fizz", "Buzz",
+        ];
         for (i, &exp) in expected.iter().enumerate() {
             let n = (i + 1) as u32;
             assert_eq!(fizzbuzz(n), exp, "fizzbuzz({n}) failed");
@@ -232,12 +237,7 @@ mod helpers_demo {
     use super::*;
 
     fn make_test_cases() -> Vec<(u32, &'static str)> {
-        vec![
-            (1, "1"),
-            (3, "Fizz"),
-            (5, "Buzz"),
-            (15, "FizzBuzz"),
-        ]
+        vec![(1, "1"), (3, "Fizz"), (5, "Buzz"), (15, "FizzBuzz")]
     }
 
     #[test]
@@ -256,11 +256,7 @@ mod helpers_demo {
         // Властивість: add(a, b) == add(b, a)
         let pairs = [(1, 2), (0, 5), (-3, 7), (100, -100)];
         for (a, b) in pairs {
-            assert_eq!(
-                add(a, b),
-                add(b, a),
-                "add not commutative for ({a}, {b})"
-            );
+            assert_eq!(add(a, b), add(b, a), "add not commutative for ({a}, {b})");
         }
     }
 }

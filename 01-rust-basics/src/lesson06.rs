@@ -148,10 +148,10 @@ fn lesson_default_impl() {
         db_name: String::from("postgres-main"),
     };
 
-    app.log();        // default реалізація
-    db.log();         // перевизначена
+    app.log(); // default реалізація
+    db.log(); // перевизначена
 
-    app.log_error("timeout");  // обидва використовують default log_error
+    app.log_error("timeout"); // обидва використовують default log_error
     db.log_error("connection lost");
 }
 
@@ -392,7 +392,7 @@ fn lesson_from_into() {
 
     // From для String — вже знайомий:
     let s: String = String::from("hello"); // From<&str> для String
-    let s2: String = "world".into();       // Into автоматично
+    let s2: String = "world".into(); // Into автоматично
     println!("  String from/into: {s}, {s2}");
 
     // From часто використовується з ? для конвертації помилок

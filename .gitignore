@@ -1,2 +1,12 @@
 .claude
 CLAUDE.md
+
+# Rust build artifacts
+target/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store

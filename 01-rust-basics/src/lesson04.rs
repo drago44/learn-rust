@@ -84,9 +84,9 @@ fn create_wallet(name: &str, balance_str: &str) -> Result<String, String> {
 fn lesson_question_mark() {
     let cases = [
         ("Alice", "100.0"),
-        ("", "50.0"),       // порожнє ім'я
-        ("Bob", "xyz"),     // невалідне число
-        ("Carol", "-5"),    // від'ємне
+        ("", "50.0"),    // порожнє ім'я
+        ("Bob", "xyz"),  // невалідне число
+        ("Carol", "-5"), // від'ємне
     ];
 
     for (name, balance) in cases {

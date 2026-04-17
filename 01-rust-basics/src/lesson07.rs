@@ -202,9 +202,9 @@ fn lesson_restricted_visibility() {
 mod config {
     #[derive(Debug)]
     pub struct DatabaseConfig {
-        pub host: String,       // публічне — можна читати/писати ззовні
-        pub port: u16,          // публічне
-        password: String,       // ПРИВАТНЕ — тільки всередині mod config
+        pub host: String, // публічне — можна читати/писати ззовні
+        pub port: u16,    // публічне
+        password: String, // ПРИВАТНЕ — тільки всередині mod config
     }
 
     impl DatabaseConfig {

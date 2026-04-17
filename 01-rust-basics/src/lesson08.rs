@@ -257,11 +257,7 @@ fn lesson_generic_impl() {
 // Хто визначає як довго живе результат — x чи y?
 // 'a каже: результат живе стільки, скільки коротший з двох.
 fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
-    if x.len() >= y.len() {
-        x
-    } else {
-        y
-    }
+    if x.len() >= y.len() { x } else { y }
 }
 
 // Lifetime НЕ потрібен якщо повертається тільки один з параметрів
@@ -307,8 +303,8 @@ fn lesson_lifetime_basics() {
 #[derive(Debug)]
 #[allow(dead_code)]
 struct Excerpt<'a> {
-    text: &'a str,     // посилання на зовнішні дані
-    page: u32,         // owned дані — lifetime не потрібен
+    text: &'a str, // посилання на зовнішні дані
+    page: u32,     // owned дані — lifetime не потрібен
 }
 
 impl<'a> Excerpt<'a> {
@@ -420,8 +416,8 @@ fn lesson_static_lifetime() {
 
 #[derive(Debug)]
 struct Cache<'a, T> {
-    data: &'a [T],    // посилання на зріз — потрібен lifetime
-    name: String,      // owned — lifetime не потрібен
+    data: &'a [T], // посилання на зріз — потрібен lifetime
+    name: String,  // owned — lifetime не потрібен
 }
 
 impl<'a, T: fmt::Display> Cache<'a, T> {
@@ -443,7 +439,10 @@ impl<'a, T: fmt::Display> Cache<'a, T> {
 
 // Функція з generic + lifetime + trait bound
 fn longest_displayed<'a, T: fmt::Display>(items: &'a [T]) -> Option<String> {
-    items.iter().map(|item| format!("{item}")).max_by_key(|s| s.len())
+    items
+        .iter()
+        .map(|item| format!("{item}"))
+        .max_by_key(|s| s.len())
 }
 
 fn lesson_combined() {

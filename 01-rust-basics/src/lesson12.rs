@@ -248,7 +248,10 @@ fn lesson_arc() {
             let data = Arc::clone(&shared);
             thread::spawn(move || {
                 let sum: i32 = data.iter().sum();
-                println!("  [потік {i}] sum = {sum}, count = {}", Arc::strong_count(&data));
+                println!(
+                    "  [потік {i}] sum = {sum}, count = {}",
+                    Arc::strong_count(&data)
+                );
             })
         })
         .collect();

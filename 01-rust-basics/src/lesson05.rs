@@ -40,7 +40,7 @@ pub fn run() {
 fn lesson_vec_basics() {
     // Створення
     let mut numbers: Vec<i32> = Vec::new(); // порожній, тип вказано явно
-    let scores = vec![10, 20, 30];          // vec! макрос з початковими даними
+    let scores = vec![10, 20, 30]; // vec! макрос з початковими даними
 
     // Додавання елементів (потрібен mut)
     numbers.push(1);
@@ -50,7 +50,7 @@ fn lesson_vec_basics() {
     println!("  scores: {:?}", scores);
 
     // Доступ за індексом
-    println!("  scores[0]: {}", scores[0]);      // паніка якщо out of bounds
+    println!("  scores[0]: {}", scores[0]); // паніка якщо out of bounds
     println!("  scores.get(1): {:?}", scores.get(1)); // Option<&T> — безпечно
 
     // .get() повертає Option — не панікує при невалідному індексі
@@ -120,8 +120,8 @@ fn lesson_string() {
     let mut s = String::from("hello");
 
     // Додавання
-    s.push(' ');              // один символ (char)
-    s.push_str("world");     // рядковий зріз (&str)
+    s.push(' '); // один символ (char)
+    s.push_str("world"); // рядковий зріз (&str)
     println!("  push: {s}");
 
     // Конкатенація
@@ -142,7 +142,11 @@ fn lesson_string() {
 
     // Довжина: БАЙТИ vs СИМВОЛИ
     let ukr = "Привіт";
-    println!("  \"{ukr}\": {} байт, {} символів", ukr.len(), ukr.chars().count());
+    println!(
+        "  \"{ukr}\": {} байт, {} символів",
+        ukr.len(),
+        ukr.chars().count()
+    );
 
     // Ітерація по символах
     print!("  символи: ");
@@ -200,9 +204,9 @@ fn lesson_hashmap() {
 
     // entry — вставити ТІЛЬКИ якщо ключа ще немає
     scores.entry(String::from("Alice")).or_insert(999); // Alice є → нічого не зміниться
-    scores.entry(String::from("Dave")).or_insert(70);   // Dave нема → вставить 70
+    scores.entry(String::from("Dave")).or_insert(70); // Dave нема → вставить 70
     println!("  Alice (entry): {:?}", scores.get("Alice")); // 110
-    println!("  Dave (entry): {:?}", scores.get("Dave"));   // 70
+    println!("  Dave (entry): {:?}", scores.get("Dave")); // 70
 
     // Ітерація
     println!("  всі оцінки:");

@@ -76,7 +76,11 @@ fn lesson_destructure_struct() {
     println!("  px={px}, py={py}");
 
     // Деструктуризація в match
-    let color = Color { r: 255, g: 128, b: 0 };
+    let color = Color {
+        r: 255,
+        g: 128,
+        b: 0,
+    };
     match color {
         Color { r: 255, g, b: 0 } => println!("  Червоно-зелений: g={g}"),
         Color { r: 0, g: 0, b } => println!("  Синій: b={b}"),
@@ -87,9 +91,17 @@ fn lesson_destructure_struct() {
     let rect = Rect {
         top_left: Point { x: 0.0, y: 10.0 },
         bottom_right: Point { x: 10.0, y: 0.0 },
-        color: Color { r: 100, g: 200, b: 50 },
+        color: Color {
+            r: 100,
+            g: 200,
+            b: 50,
+        },
     };
-    let Rect { top_left: Point { x: x1, .. }, bottom_right: Point { x: x2, .. }, .. } = rect;
+    let Rect {
+        top_left: Point { x: x1, .. },
+        bottom_right: Point { x: x2, .. },
+        ..
+    } = rect;
     println!("  ширина rect: {}", x2 - x1);
 }
 
@@ -138,10 +150,16 @@ fn lesson_destructure_enum() {
     };
 
     match shape {
-        Shape::Circle { center: Point { x, y }, radius } => {
+        Shape::Circle {
+            center: Point { x, y },
+            radius,
+        } => {
             println!("  Коло: центр ({x},{y}), r={radius}");
         }
-        Shape::Rectangle(Rect { top_left: Point { x, y }, .. }) => {
+        Shape::Rectangle(Rect {
+            top_left: Point { x, y },
+            ..
+        }) => {
             println!("  Прямокутник від ({x},{y})");
         }
         Shape::Triangle(p1, p2, p3) => {
@@ -358,10 +376,7 @@ fn lesson_ref_patterns() {
 
     // Сучасна альтернатива: match &payload (match ergonomics)
     // При `for p in &vec` — ref більше не потрібен, Rust робить це автоматично
-    let payloads = vec![
-        Payload::Text(String::from("beta")),
-        Payload::Number(42),
-    ];
+    let payloads = vec![Payload::Text(String::from("beta")), Payload::Number(42)];
     for p in &payloads {
         match p {
             Payload::Text(s) => println!("  auto-ref text: {s}"), // s: &String автоматично
@@ -524,7 +539,10 @@ macro_rules! assert_approx_eq {
         assert!(
             diff < $epsilon,
             "assert_approx_eq failed: |{} - {}| = {} >= {}",
-            $left, $right, diff, $epsilon
+            $left,
+            $right,
+            diff,
+            $epsilon
         );
     };
 }

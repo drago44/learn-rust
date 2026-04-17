@@ -66,24 +66,40 @@ struct Cat {
 struct Cow;
 
 impl Animal for Dog {
-    fn name(&self) -> &str { &self.name }
-    fn sound(&self) -> &str { "Гав!" }
+    fn name(&self) -> &str {
+        &self.name
+    }
+    fn sound(&self) -> &str {
+        "Гав!"
+    }
 }
 
 impl Animal for Cat {
-    fn name(&self) -> &str { &self.name }
-    fn sound(&self) -> &str { "Няв!" }
+    fn name(&self) -> &str {
+        &self.name
+    }
+    fn sound(&self) -> &str {
+        "Няв!"
+    }
 }
 
 impl Animal for Cow {
-    fn name(&self) -> &str { "Корова" }
-    fn sound(&self) -> &str { "Му!" }
+    fn name(&self) -> &str {
+        "Корова"
+    }
+    fn sound(&self) -> &str {
+        "Му!"
+    }
 }
 
 fn lesson_dyn_trait() {
     // &dyn Trait — позичений trait object
-    let dog = Dog { name: String::from("Рекс") };
-    let cat = Cat { name: String::from("Мурка") };
+    let dog = Dog {
+        name: String::from("Рекс"),
+    };
+    let cat = Cat {
+        name: String::from("Мурка"),
+    };
 
     let animal: &dyn Animal = &dog;
     println!("  {}", animal.describe());
@@ -106,10 +122,16 @@ fn print_animal(animal: &dyn Animal) {
 
 fn lesson_box_dyn() {
     let animals: Vec<Box<dyn Animal>> = vec![
-        Box::new(Dog { name: String::from("Барс") }),
-        Box::new(Cat { name: String::from("Сірко") }),
+        Box::new(Dog {
+            name: String::from("Барс"),
+        }),
+        Box::new(Cat {
+            name: String::from("Сірко"),
+        }),
         Box::new(Cow),
-        Box::new(Dog { name: String::from("Жук") }),
+        Box::new(Dog {
+            name: String::from("Жук"),
+        }),
     ];
 
     for animal in &animals {
@@ -151,8 +173,12 @@ fn dynamic_describe(animal: &dyn Animal) -> String {
 }
 
 fn lesson_dispatch_comparison() {
-    let dog = Dog { name: String::from("Пес") };
-    let cat = Cat { name: String::from("Кіт") };
+    let dog = Dog {
+        name: String::from("Пес"),
+    };
+    let cat = Cat {
+        name: String::from("Кіт"),
+    };
 
     // static: компілятор розкриє в дві функції
     println!("  static: {}", static_describe(&dog));
@@ -243,21 +269,29 @@ struct Published {
 
 impl Draft {
     fn new(content: &str) -> Self {
-        Self { content: content.to_string() }
+        Self {
+            content: content.to_string(),
+        }
     }
 
     fn request_review(self) -> PendingReview {
-        PendingReview { content: self.content }
+        PendingReview {
+            content: self.content,
+        }
     }
 }
 
 impl PendingReview {
     fn approve(self) -> Published {
-        Published { content: self.content }
+        Published {
+            content: self.content,
+        }
     }
 
     fn reject(self) -> Draft {
-        Draft { content: self.content }
+        Draft {
+            content: self.content,
+        }
     }
 }
 
@@ -302,18 +336,30 @@ struct DescendingSort;
 struct AbsoluteSort;
 
 impl SortStrategy for AscendingSort {
-    fn sort(&self, data: &mut Vec<i32>) { data.sort(); }
-    fn name(&self) -> &str { "за зростанням" }
+    fn sort(&self, data: &mut Vec<i32>) {
+        data.sort();
+    }
+    fn name(&self) -> &str {
+        "за зростанням"
+    }
 }
 
 impl SortStrategy for DescendingSort {
-    fn sort(&self, data: &mut Vec<i32>) { data.sort_by(|a, b| b.cmp(a)); }
-    fn name(&self) -> &str { "за спаданням" }
+    fn sort(&self, data: &mut Vec<i32>) {
+        data.sort_by(|a, b| b.cmp(a));
+    }
+    fn name(&self) -> &str {
+        "за спаданням"
+    }
 }
 
 impl SortStrategy for AbsoluteSort {
-    fn sort(&self, data: &mut Vec<i32>) { data.sort_by_key(|x| x.abs()); }
-    fn name(&self) -> &str { "за модулем" }
+    fn sort(&self, data: &mut Vec<i32>) {
+        data.sort_by_key(|x| x.abs());
+    }
+    fn name(&self) -> &str {
+        "за модулем"
+    }
 }
 
 struct Sorter {
@@ -422,7 +468,10 @@ fn lesson_builder_pattern() {
     let get = HttpRequestBuilder::new("get", "https://api.example.com/users")
         .build()
         .unwrap();
-    println!("  {} {} (default timeout: {}ms)", get.method, get.url, get.timeout_ms);
+    println!(
+        "  {} {} (default timeout: {}ms)",
+        get.method, get.url, get.timeout_ms
+    );
 
     // Валідація
     let err = HttpRequestBuilder::new("get", "").build();

@@ -67,7 +67,10 @@ fn lesson_box() {
     // Box<dyn Trait> — зберігаємо різні типи за одним інтерфейсом
     let shapes: Vec<Box<dyn Shape>> = vec![
         Box::new(Circle { radius: 3.0 }),
-        Box::new(Rectangle { width: 4.0, height: 5.0 }),
+        Box::new(Rectangle {
+            width: 4.0,
+            height: 5.0,
+        }),
         Box::new(Circle { radius: 1.0 }),
     ];
     for shape in &shapes {
@@ -141,10 +144,7 @@ impl List {
 }
 
 fn lesson_box_recursive() {
-    let list = List::new()
-        .prepend(3)
-        .prepend(2)
-        .prepend(1);
+    let list = List::new().prepend(3).prepend(2).prepend(1);
 
     println!("  list: {list:?}");
     println!("  sum: {}", list.sum());
@@ -203,8 +203,12 @@ impl Drop for Resource {
 
 fn lesson_drop() {
     println!("  Створюємо r1 та r2...");
-    let r1 = Resource { name: String::from("r1") };
-    let r2 = Resource { name: String::from("r2") };
+    let r1 = Resource {
+        name: String::from("r1"),
+    };
+    let r2 = Resource {
+        name: String::from("r2"),
+    };
 
     println!("  Явно скидаємо r1 через drop()...");
     drop(r1); // r1 дропається тут, раніше кінця scope
@@ -254,7 +258,10 @@ fn lesson_rc() {
 
     println!("  worker1 бачить: {worker1:?}");
     println!("  worker2 бачить: {worker2:?}");
-    println!("  Це ті самі дані — count: {}", Rc::strong_count(&shared_config));
+    println!(
+        "  Це ті самі дані — count: {}",
+        Rc::strong_count(&shared_config)
+    );
 }
 
 // ============================================================
