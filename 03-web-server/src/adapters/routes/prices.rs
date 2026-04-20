@@ -1,5 +1,5 @@
-use crate::adapters::clients::coingecko;
-use axum::{Json, extract::Path, http::StatusCode, response::IntoResponse};
+use crate::adapters::{clients::coingecko, errors::AppError};
+use axum::{Json, extract::Path};
 use serde::Serialize;
 
 #[derive(Serialize)]
@@ -8,31 +8,17 @@ pub struct PriceResponse {
     pub price_usd: f64,
 }
 
-#[derive(Serialize)]
-pub struct ErrorResponse {
-    pub error: String,
-}
+pub async fn get_price(Path(symbol): Path<String>) -> Result<Json<PriceResponse>, AppError> {
+    let price = coingecko::fetch_price(&symbol)
+        .await
+        .map_err(|_| AppError::BadGateway)?;
 
-pub async fn get_price(Path(symbol): Path<String>) -> impl IntoResponse {
-    match coingecko::fetch_price(&symbol).await {
-        Err(_) => (
-            StatusCode::BAD_GATEWAY,
-            Json(ErrorResponse {
-                error: "CoinGecko unavailable".to_string(),
-            }),
-        )
-            .into_response(),
-        Ok(0.0) => (
-            StatusCode::NOT_FOUND,
-            Json(ErrorResponse {
-                error: format!("Coin '{}' not found", symbol),
-            }),
-        )
-            .into_response(),
-        Ok(price) => Json(PriceResponse {
-            symbol: symbol.to_uppercase(),
-            price_usd: price,
-        })
-        .into_response(),
+    if price == 0.0 {
+        return Err(AppError::NotFound(format!("Coin '{}' not found", symbol)));
     }
+
+    Ok(Json(PriceResponse {
+        symbol: symbol.to_uppercase(),
+        price_usd: price,
+    }))
 }
