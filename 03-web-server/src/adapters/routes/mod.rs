@@ -1,9 +1,12 @@
 use axum::{Router, routing::get};
 
 mod health;
+mod prices;
 
 pub fn routes() -> Router {
-    let v1 = Router::new().route("/health", get(health::health_handler));
+    let v1 = Router::new()
+        .route("/prices/{symbol}", get(prices::get_price))
+        .route("/health", get(health::health_handler));
 
     Router::new().nest("/api/v1", v1)
 }
