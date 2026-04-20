@@ -1,7 +1,4 @@
-use crate::adapters::{
-    clients::coingecko::{self, CoinInfo},
-    errors::AppError,
-};
+use crate::{error::AppError, models::coin::CoinInfo, services::coingecko};
 use axum::Json;
 
 pub async fn get_coins() -> Result<Json<Vec<CoinInfo>>, AppError> {

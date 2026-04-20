@@ -1,4 +1,4 @@
-use crate::adapters::{clients::coingecko, errors::AppError};
+use crate::{error::AppError, services::coingecko};
 use axum::{Json, extract::Path};
 use serde::Serialize;
 

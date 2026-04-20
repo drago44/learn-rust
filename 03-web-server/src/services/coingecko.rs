@@ -1,13 +1,6 @@
+use crate::models::coin::CoinInfo;
 use anyhow::Result;
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-
-#[derive(Deserialize, Serialize)]
-pub struct CoinInfo {
-    pub id: String,
-    pub symbol: String,
-    pub name: String,
-}
 
 fn build_client() -> reqwest::Client {
     reqwest::Client::builder()

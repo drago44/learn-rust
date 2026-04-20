@@ -12,8 +12,6 @@ pub enum AppError {
     BadGateway,
     #[error("not found: {0}")]
     NotFound(String),
-    // #[error("unauthorized")]
-    // Unauthorized,
 }
 
 impl IntoResponse for AppError {
@@ -21,7 +19,6 @@ impl IntoResponse for AppError {
         let (status, msg) = match &self {
             AppError::NotFound(m) => (StatusCode::NOT_FOUND, m.clone()),
             AppError::BadGateway => (StatusCode::BAD_GATEWAY, "upstream unavailable".to_string()),
-            // AppError::Unauthorized => (StatusCode::UNAUTHORIZED, "unauthorized".to_string()),
         };
         (status, Json(json!({ "error": msg }))).into_response()
     }

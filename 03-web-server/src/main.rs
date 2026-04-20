@@ -1,22 +1,21 @@
 use tokio::net::TcpListener;
-
-mod adapters;
-mod domain;
-mod ports;
+use web_server::{config::Config, repositories, routes};
 
 #[tokio::main]
 async fn main() {
     dotenv::dotenv().ok();
 
-    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    let pool = adapters::db::create_pool(&database_url)
+    let config = Config::from_env();
+    let pool = repositories::create_pool(&config.database_url)
         .await
         .expect("Failed to connect to database");
 
-    println!("Database connected: {}", database_url);
+    println!("Database connected: {}", config.database_url);
 
-    let app = adapters::routes::routes(pool);
-    let listener = TcpListener::bind("0.0.0.0:3000").await.unwrap();
-    println!("Server running on http://localhost:3000");
+    let app = routes::routes(pool);
+    let listener = TcpListener::bind(format!("0.0.0.0:{}", config.port))
+        .await
+        .unwrap();
+    println!("Server running on http://localhost:{}", config.port);
     axum::serve(listener, app).await.unwrap();
 }
