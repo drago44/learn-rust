@@ -11,3 +11,11 @@ temp/
 
 # OS
 .DS_Store
+
+# DB
+*.db
+*.db-shm
+*.db-wal
+
+# Env
+.env
