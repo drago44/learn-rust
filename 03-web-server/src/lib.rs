@@ -1,7 +1,9 @@
 pub mod config;
+pub mod dto;
 pub mod error;
 pub mod handlers;
 pub mod middleware;
+pub mod migration;
 pub mod models;
 pub mod repositories;
 pub mod routes;

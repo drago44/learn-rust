@@ -6,3 +6,9 @@ pub struct CoinInfo {
     pub symbol: String,
     pub name: String,
 }
+
+#[derive(Serialize)]
+pub struct PriceResponse {
+    pub symbol: String,
+    pub price_usd: f64,
+}

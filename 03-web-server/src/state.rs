@@ -1,4 +1,6 @@
+use sea_orm::DatabaseConnection;
+
 #[derive(Clone)]
 pub struct AppState {
-    pub pool: sqlx::SqlitePool,
+    pub db: DatabaseConnection,
 }

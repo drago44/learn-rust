@@ -1,10 +1,7 @@
-use crate::{error::AppError, models::coin::CoinInfo, services::coingecko};
+use crate::{dto::coins::CoinInfo, error::AppError, services::coingecko};
 use axum::Json;
 
 pub async fn get_coins() -> Result<Json<Vec<CoinInfo>>, AppError> {
-    let coins = coingecko::fetch_coins_list()
-        .await
-        .map_err(|_| AppError::BadGateway)?;
-
+    let coins = coingecko::get_coins().await?;
     Ok(Json(coins))
 }

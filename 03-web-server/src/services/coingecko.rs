@@ -1,4 +1,4 @@
-use crate::models::coin::CoinInfo;
+use crate::{dto::coins::CoinInfo, error::AppError};
 use anyhow::Result;
 use std::collections::HashMap;
 
@@ -13,20 +13,18 @@ fn build_client() -> reqwest::Client {
         .unwrap()
 }
 
-pub async fn fetch_coins_list() -> Result<Vec<CoinInfo>> {
-    let url = "https://api.coingecko.com/api/v3/coins/list";
-
-    let response = build_client()
-        .get(url)
+pub async fn get_coins() -> Result<Vec<CoinInfo>, AppError> {
+    build_client()
+        .get("https://api.coingecko.com/api/v3/coins/list")
         .send()
-        .await?
+        .await
+        .map_err(|_| AppError::BadGateway)?
         .json::<Vec<CoinInfo>>()
-        .await?;
-
-    Ok(response)
+        .await
+        .map_err(|_| AppError::BadGateway)
 }
 
-pub async fn fetch_price(symbol: &str) -> Result<f64> {
+pub async fn get_price(symbol: &str) -> Result<f64, AppError> {
     let id = symbol.to_lowercase();
     let url = format!(
         "https://api.coingecko.com/api/v3/simple/price?ids={}&vs_currencies=usd",
@@ -36,15 +34,15 @@ pub async fn fetch_price(symbol: &str) -> Result<f64> {
     let response = build_client()
         .get(&url)
         .send()
-        .await?
+        .await
+        .map_err(|_| AppError::BadGateway)?
         .json::<HashMap<String, HashMap<String, f64>>>()
-        .await?;
+        .await
+        .map_err(|_| AppError::BadGateway)?;
 
-    let price = response
+    response
         .get(&id)
         .and_then(|r| r.get("usd"))
         .copied()
-        .unwrap_or(0.0);
-
-    Ok(price)
+        .ok_or_else(|| AppError::NotFound(format!("Coin '{}' not found", symbol)))
 }
