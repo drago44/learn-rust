@@ -8,29 +8,32 @@ use std::sync::Arc;
 use tower_governor::{GovernorLayer, governor::GovernorConfigBuilder};
 
 pub fn routes(db: DatabaseConnection) -> Router {
-    // суворий — brute force захист на auth
-    let auth_governor = Arc::new(
-        GovernorConfigBuilder::default()
-            .per_second(2)
-            .burst_size(5)
-            .finish()
-            .unwrap(),
-    );
+    build(db, true)
+}
 
-    // м'який — DoS захист на всі маршрути
-    let global_governor = Arc::new(
-        GovernorConfigBuilder::default()
-            .per_second(1)
-            .burst_size(100)
-            .finish()
-            .unwrap(),
-    );
+pub fn test_app(db: DatabaseConnection) -> Router {
+    build(db, false)
+}
 
+// rate_limiting - це прапор, який дозволяє включити або виключити rate limiting для production та test environment.
+fn build(db: DatabaseConnection, rate_limiting: bool) -> Router {
     let auth_public = Router::new()
         .route("/auth/register", post(handlers::auth::register))
         .route("/auth/login", post(handlers::auth::login))
-        .route("/auth/refresh", post(handlers::auth::refresh))
-        .layer(GovernorLayer::new(auth_governor));
+        .route("/auth/refresh", post(handlers::auth::refresh));
+
+    let auth_public = if rate_limiting {
+        let auth_governor = Arc::new(
+            GovernorConfigBuilder::default()
+                .per_second(2)
+                .burst_size(5)
+                .finish()
+                .unwrap(),
+        );
+        auth_public.layer(GovernorLayer::new(auth_governor))
+    } else {
+        auth_public
+    };
 
     let auth_protected = Router::new()
         .route("/auth/logout", post(handlers::auth::logout))
@@ -51,7 +54,7 @@ pub fn routes(db: DatabaseConnection) -> Router {
         .route("/prices/{symbol}", get(handlers::prices::get_price))
         .route("/health", get(handlers::health::health_handler));
 
-    Router::new()
+    let router = Router::new()
         .nest(
             "/api/v1",
             auth_public
@@ -59,6 +62,18 @@ pub fn routes(db: DatabaseConnection) -> Router {
                 .merge(portfolio)
                 .merge(public),
         )
-        .layer(GovernorLayer::new(global_governor))
-        .with_state(AppState { db })
+        .with_state(AppState { db });
+
+    if rate_limiting {
+        let global_governor = Arc::new(
+            GovernorConfigBuilder::default()
+                .per_second(1)
+                .burst_size(100)
+                .finish()
+                .unwrap(),
+        );
+        router.layer(GovernorLayer::new(global_governor))
+    } else {
+        router
+    }
 }
