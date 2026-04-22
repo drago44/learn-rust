@@ -4,12 +4,33 @@ use axum::{
     routing::{delete, get, post},
 };
 use sea_orm::DatabaseConnection;
+use std::sync::Arc;
+use tower_governor::{GovernorLayer, governor::GovernorConfigBuilder};
 
 pub fn routes(db: DatabaseConnection) -> Router {
+    // суворий — brute force захист на auth
+    let auth_governor = Arc::new(
+        GovernorConfigBuilder::default()
+            .per_second(2)
+            .burst_size(5)
+            .finish()
+            .unwrap(),
+    );
+
+    // м'який — DoS захист на всі маршрути
+    let global_governor = Arc::new(
+        GovernorConfigBuilder::default()
+            .per_second(1)
+            .burst_size(100)
+            .finish()
+            .unwrap(),
+    );
+
     let auth_public = Router::new()
         .route("/auth/register", post(handlers::auth::register))
         .route("/auth/login", post(handlers::auth::login))
-        .route("/auth/refresh", post(handlers::auth::refresh));
+        .route("/auth/refresh", post(handlers::auth::refresh))
+        .layer(GovernorLayer::new(auth_governor));
 
     let auth_protected = Router::new()
         .route("/auth/logout", post(handlers::auth::logout))
@@ -38,5 +59,6 @@ pub fn routes(db: DatabaseConnection) -> Router {
                 .merge(portfolio)
                 .merge(public),
         )
+        .layer(GovernorLayer::new(global_governor))
         .with_state(AppState { db })
 }
