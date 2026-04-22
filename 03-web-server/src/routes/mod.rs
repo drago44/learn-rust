@@ -1,7 +1,7 @@
 use crate::{handlers, middleware::jwt_auth, state::AppState};
 use axum::{
     Router, middleware,
-    routing::{get, post},
+    routing::{delete, get, post},
 };
 use sea_orm::DatabaseConnection;
 
@@ -15,12 +15,28 @@ pub fn routes(db: DatabaseConnection) -> Router {
         .route("/auth/logout", post(handlers::auth::logout))
         .layer(middleware::from_fn(jwt_auth));
 
+    let portfolio = Router::new()
+        .route("/portfolio", post(handlers::portfolio::create_portfolio))
+        .route("/portfolio", get(handlers::portfolio::get_portfolio))
+        .route("/portfolio/asset", post(handlers::portfolio::add_asset))
+        .route(
+            "/portfolio/asset/{symbol}",
+            delete(handlers::portfolio::delete_asset),
+        )
+        .layer(middleware::from_fn(jwt_auth));
+
     let public = Router::new()
         .route("/coins", get(handlers::coins::get_coins))
         .route("/prices/{symbol}", get(handlers::prices::get_price))
         .route("/health", get(handlers::health::health_handler));
 
     Router::new()
-        .nest("/api/v1", auth_public.merge(auth_protected).merge(public))
+        .nest(
+            "/api/v1",
+            auth_public
+                .merge(auth_protected)
+                .merge(portfolio)
+                .merge(public),
+        )
         .with_state(AppState { db })
 }
