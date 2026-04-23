@@ -6,6 +6,7 @@ fn main() {
     // --- Хешування ---
     println!("Input:  {}", msg);
     println!("SHA256: {}", hashing::hash_sha256(msg));
+    println!("BLAKE3: {}", hashing::hash_blake3(msg.as_bytes()));
     println!(
         "Keccak: {}",
         hex::encode(hashing::hash_keccak256(msg.as_bytes()))
