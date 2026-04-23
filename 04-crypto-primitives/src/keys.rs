@@ -1,8 +1,9 @@
-use crate::hashing::hash_keccak256;
+use crate::hashing::{hash_keccak256, hash_sha256_bytes};
 use ed25519_dalek::{SigningKey as Ed25519SigningKey, VerifyingKey as Ed25519VerifyingKey};
 use k256::SecretKey;
 use k256::ecdsa::{SigningKey as Secp256k1SigningKey, VerifyingKey as Secp256k1VerifyingKey};
 use rand::Rng;
+use ripemd::{Digest as RipemdDigest, Ripemd160};
 
 // =============================================================================
 // secp256k1 — крива для ETH і BTC
@@ -19,11 +20,15 @@ pub fn generate_secp256k1_keypair() -> (Secp256k1SigningKey, Secp256k1VerifyingK
     let signing_key = Secp256k1SigningKey::from(&secret_key);
     let verifying_key = Secp256k1VerifyingKey::from(&signing_key);
 
-    println!("ETH private: {}", hex::encode(secret_key.to_bytes()));
     println!(
-        "ETH public:  {}",
+        "  secp256k1 private: {}",
+        hex::encode(secret_key.to_bytes())
+    );
+    println!(
+        "  secp256k1 public:  {}",
         hex::encode(verifying_key.to_encoded_point(false).as_bytes())
     );
+    println!("  (ETH і BTC використовують ці самі ключі, різні лише адреси)");
 
     (signing_key, verifying_key)
 }
@@ -39,6 +44,42 @@ pub fn eth_address(verifying_key: &Secp256k1VerifyingKey) -> String {
 }
 
 // =============================================================================
+// Bitcoin адреси (secp256k1)
+// =============================================================================
+
+// hash160 = RIPEMD160(SHA256(pubkey)) — стандартна операція в Bitcoin.
+// Використовується в обох форматах адрес.
+fn hash160(input: &[u8]) -> [u8; 20] {
+    let sha256 = hash_sha256_bytes(input);
+    let mut hasher = Ripemd160::new();
+    hasher.update(sha256);
+    hasher.finalize().into()
+}
+
+// P2PKH (legacy) — починається з '1'.
+// Формат: Base58Check( 0x00 + hash160(pubkey) )
+pub fn btc_address_p2pkh(verifying_key: &Secp256k1VerifyingKey) -> String {
+    // Стиснутий ключ (33 байти: 02/03 + X) — стандарт для сучасних BTC гаманців
+    let pub_bytes = verifying_key.to_encoded_point(true).as_bytes().to_vec();
+    let h160 = hash160(&pub_bytes);
+
+    // Версійний байт 0x00 = mainnet P2PKH
+    let mut payload = vec![0x00u8];
+    payload.extend_from_slice(&h160);
+    bs58::encode(payload).with_check().into_string()
+}
+
+// P2WPKH (SegWit) — починається з 'bc1q'.
+// Формат: Bech32( "bc", witness_v0, hash160(pubkey) )
+pub fn btc_address_p2wpkh(verifying_key: &Secp256k1VerifyingKey) -> String {
+    use bech32::segwit;
+    let pub_bytes = verifying_key.to_encoded_point(true).as_bytes().to_vec();
+    let h160 = hash160(&pub_bytes);
+    // witness version 0 + hash160 → bech32 з hrp "bc" (mainnet)
+    segwit::encode_v0(bech32::hrp::BC, &h160).unwrap()
+}
+
+// =============================================================================
 // ed25519 — крива для Solana (і SSH, GPG, Monero)
 // =============================================================================
 
@@ -51,8 +92,11 @@ pub fn generate_ed25519_keypair() -> (Ed25519SigningKey, Ed25519VerifyingKey) {
     let signing_key = Ed25519SigningKey::from_bytes(&secret_bytes);
     let verifying_key = signing_key.verifying_key();
 
-    println!("SOL private: {}", hex::encode(signing_key.to_bytes()));
-    println!("SOL public:  {}", hex::encode(verifying_key.as_bytes()));
+    println!("  ed25519 private: {}", hex::encode(signing_key.to_bytes()));
+    println!(
+        "  ed25519 public:  {}",
+        hex::encode(verifying_key.as_bytes())
+    );
 
     (signing_key, verifying_key)
 }

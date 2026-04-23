@@ -1,6 +1,13 @@
 use sha2::{Digest, Sha256};
 use tiny_keccak::{Hasher, Keccak};
 
+// SHA-256 що повертає сирі байти — для внутрішніх операцій (hash160, подвійний SHA256).
+pub fn hash_sha256_bytes(input: &[u8]) -> [u8; 32] {
+    let mut hasher = Sha256::new();
+    hasher.update(input);
+    hasher.finalize().into()
+}
+
 // SHA-256 — стандартний криптографічний хеш. Використовується в Bitcoin,
 // TLS, підписах. Повертає hex-рядок для зручного виводу.
 pub fn hash_sha256(input: &str) -> String {
