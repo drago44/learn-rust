@@ -1,4 +1,4 @@
-use crypto_primitives::{hashing, keys, mnemonic, signing};
+use crypto_primitives::{hashing, hdwallet, keys, mnemonic, signing};
 
 fn main() {
     let msg = "hello crypto";
@@ -26,9 +26,16 @@ fn main() {
         signing::verify_message(&verifying_key, "evil", &sig)
     );
 
-    // --- Мнемоніка ---
+    // --- Мнемоніка (BIP39) ---
     let mnemonic = mnemonic::generate_mnemonic();
-    println!("Mnemonic: {}", mnemonic);
-    let seed = mnemonic.to_seed(""); // "" = без пароля
-    println!("Seed:     {}", hex::encode(&seed[..8])); // перші 8 байт для читабельності
+    println!("\nMnemonic: {}", mnemonic);
+    let seed = mnemonic.to_seed(""); // "" = без додаткового пароля
+    println!("Seed:     {}", hex::encode(&seed[..8]));
+
+    // --- HD гаманець (BIP32/BIP44) ---
+    // З однієї мнемоніки — необмежена кількість адрес, як у MetaMask
+    let (_, hd_verifying0) = hdwallet::derive_eth_keypair(&seed, 0);
+    let (_, hd_verifying1) = hdwallet::derive_eth_keypair(&seed, 1);
+    println!("ETH[0]:   {}", keys::eth_address(&hd_verifying0));
+    println!("ETH[1]:   {}", keys::eth_address(&hd_verifying1));
 }
