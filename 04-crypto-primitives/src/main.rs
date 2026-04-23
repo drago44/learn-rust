@@ -3,7 +3,10 @@ use crypto_primitives::{hashing, hdwallet, keys, mnemonic, signing};
 fn main() {
     let msg = "hello crypto";
 
-    // --- Хешування ---
+    // =========================================================================
+    // # Хешування
+    // =========================================================================
+    println!("=== Хешування ===");
     println!("Input:  {}", msg);
     println!("SHA256: {}", hashing::hash_sha256(msg));
     println!("BLAKE3: {}", hashing::hash_blake3(msg.as_bytes()));
@@ -12,29 +15,45 @@ fn main() {
         hex::encode(hashing::hash_keccak256(msg.as_bytes()))
     );
 
-    // --- Ключі та адреса ---
-    let (signing_key, verifying_key) = keys::generate_keypair();
+    // =========================================================================
+    // # Ключі
+    // =========================================================================
 
-    // --- Підписування ---
+    // ## secp256k1 — ETH / BTC
+    println!("\n=== Ключі: secp256k1 (ETH/BTC) ===");
+    let (signing_key, verifying_key) = keys::generate_secp256k1_keypair();
+    println!("ETH address: {}", keys::eth_address(&verifying_key));
+
+    // ## ed25519 — Solana
+    println!("\n=== Ключі: ed25519 (Solana) ===");
+    let (_sol_signing, sol_verifying) = keys::generate_ed25519_keypair();
+    println!("SOL address: {}", keys::solana_address(&sol_verifying));
+
+    // =========================================================================
+    // # Підписування (secp256k1)
+    // =========================================================================
+    println!("\n=== Підписування ===");
     let sig = signing::sign_message(&signing_key, msg);
-    println!("Signature:   {}", hex::encode(sig.to_bytes()));
+    println!("Message:   {}", msg);
+    println!("Signature: {}", hex::encode(sig.to_bytes()));
     println!(
-        "Valid:       {}",
+        "Valid:     {}",
         signing::verify_message(&verifying_key, msg, &sig)
     );
     println!(
-        "Tampered:    {}",
+        "Tampered:  {}",
         signing::verify_message(&verifying_key, "evil", &sig)
     );
 
-    // --- Мнемоніка (BIP39) ---
+    // =========================================================================
+    // # HD гаманець (BIP39 → BIP32 → BIP44)
+    // =========================================================================
+    println!("\n=== HD Гаманець ===");
     let mnemonic = mnemonic::generate_mnemonic();
-    println!("\nMnemonic: {}", mnemonic);
-    let seed = mnemonic.to_seed(""); // "" = без додаткового пароля
+    println!("Mnemonic: {}", mnemonic);
+    let seed = mnemonic.to_seed("");
     println!("Seed:     {}", hex::encode(&seed[..8]));
 
-    // --- HD гаманець (BIP32/BIP44) ---
-    // З однієї мнемоніки — необмежена кількість адрес, як у MetaMask
     let (_, hd_verifying0) = hdwallet::derive_eth_keypair(&seed, 0);
     let (_, hd_verifying1) = hdwallet::derive_eth_keypair(&seed, 1);
     println!("ETH[0]:   {}", keys::eth_address(&hd_verifying0));

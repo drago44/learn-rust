@@ -6,7 +6,9 @@ edition = "2024"
 [dependencies]
 bip39 = "2.2.2"
 blake3 = "1.8.4"
+bs58 = "0.5.1"
 coins-bip32 = "0.13.0"
+ed25519-dalek = { version = "2.2.0", features = ["rand_core"] }
 hex = "0.4.3"
 k256 = { version = "0.13.4", features = ["ecdsa", "sha256"] }
 rand = "0.10.1"
