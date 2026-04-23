@@ -5,4 +5,7 @@ edition = "2024"
 
 [dependencies]
 hex = "0.4.3"
+k256 = { version = "0.13.4", features = ["ecdsa"] }
+rand = "0.10.1"
 sha2 = "0.11.0"
+tiny-keccak = { version = "2.0.2", features = ["keccak"] }
