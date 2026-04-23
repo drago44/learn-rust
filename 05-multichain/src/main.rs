@@ -8,10 +8,25 @@ async fn main() {
 
     match btc::get_balance(address).await {
         Ok(balance) => {
-            // 1 BTC = 100_000_000 satoshi
             let btc = balance.amount as f64 / 100_000_000.0;
             println!("Address: {}", balance.address);
             println!("Balance: {:.8} {}", btc, balance.symbol);
+        }
+        Err(e) => eprintln!("Error: {e}"),
+    }
+
+    println!("\nTransactions:");
+    match btc::get_txs(address).await {
+        Ok(txs) => {
+            for tx in txs.iter().take(5) {
+                let btc = tx.amount as f64 / 100_000_000.0;
+                println!(
+                    "  {} | {:+.8} BTC | conf: {}",
+                    &tx.txid[..8],
+                    btc,
+                    tx.confirmations
+                );
+            }
         }
         Err(e) => eprintln!("Error: {e}"),
     }
