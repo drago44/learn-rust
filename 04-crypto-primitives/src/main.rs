@@ -22,6 +22,13 @@ enum Command {
         #[arg(short, long)]
         message: String,
     },
+    /// Генерує M-of-N мультисиг адресу (P2SH), починається з '3'
+    Multisig {
+        #[arg(short, long, default_value = "2")]
+        m: usize,
+        #[arg(short, long, default_value = "3")]
+        n: usize,
+    },
     /// Запускає демо всіх криптографічних примітивів
     Demo,
 }
@@ -57,6 +64,7 @@ fn main() {
             println!("ETH:         {}", keys::eth_address_checksum(&eth_vk));
             println!("BTC P2PKH:   {}", keys::btc_address_p2pkh(&eth_vk));
             println!("BTC P2WPKH:  {}", keys::btc_address_p2wpkh(&eth_vk));
+            println!("BTC P2TR:    {}", keys::btc_address_p2tr(&eth_vk));
 
             let sol = hdwallet::derive_sol_keypair(&seed, 0);
             println!(
@@ -80,6 +88,7 @@ fn main() {
             );
             println!("BTC P2PKH:   {}", keys::btc_address_p2pkh(&eth_vk));
             println!("BTC P2WPKH:  {}", keys::btc_address_p2wpkh(&eth_vk));
+            println!("BTC P2TR:    {}", keys::btc_address_p2tr(&eth_vk));
 
             let sol = hdwallet::derive_sol_keypair(&seed, index);
             println!(
@@ -103,6 +112,21 @@ fn main() {
             println!(
                 "Valid:       {}",
                 signing::verify_message(&verifying_key, &message, &sig)
+            );
+        }
+
+        Command::Multisig { m, n } => {
+            println!("Generating {m}-of-{n} multisig...\n");
+            let mut pub_keys = vec![];
+            for i in 0..n {
+                println!("Key [{i}]:");
+                let (_, vk) = keys::generate_secp256k1_keypair();
+                pub_keys.push(vk);
+                println!();
+            }
+            println!(
+                "Multisig {m}-of-{n}: {}",
+                keys::btc_address_multisig(&pub_keys, m)
             );
         }
 

@@ -12,21 +12,24 @@
 ##### ✅ Bitcoin адреси — P2PKH, P2WPKH
 ##### ✅ EIP-55 — checksum для ETH адрес
 ##### ✅ Solana деривація з мнемоніки — `m/44'/501'/0'/0'`
+##### ✅ Schnorr/P2TR — адреса Bitcoin Taproot (`bc1p...`, Bech32m, x-only pubkey)
+##### ✅ Multisig M-of-N — P2SH адреса (`3...`, OP_M + pubkeys + OP_N + OP_CHECKMULTISIG)
 
 **Проєкт: `04-crypto-primitives/`**
 ##### ✅ Генерація мнемоніки (12 слів)
 ##### ✅ Деривація ключів для ETH (BIP44)
-##### ✅ Генерація BTC адрес — P2PKH і P2WPKH
+##### ✅ Генерація BTC адрес — P2PKH, P2WPKH, P2TR
 ##### ✅ Підписування повідомлення та верифікація
 ##### ✅ Генерація Ethereum адреси з приватного ключа
 ##### ✅ Генерація Solana адреси з публічного ключа
-##### ✅ CLI: `wallet new`, `wallet derive`, `wallet sign`, `wallet demo`
+##### ✅ CLI: `wallet new`, `wallet derive`, `wallet sign`, `wallet multisig`, `wallet demo`
 
 **CLI команди:**
 ```bash
-cargo run -- new                        # нова мнемоніка + адреси ETH/BTC/SOL
+cargo run -- new                        # нова мнемоніка + адреси ETH/BTC(P2PKH,P2WPKH,P2TR)/SOL
 cargo run -- derive --index 1           # деривація адрес по індексу
 cargo run -- sign --message "hello"     # підписати повідомлення
+cargo run -- multisig --m 2 --n 3      # 2-of-3 мультисиг адреса (P2SH)
 cargo run -- demo                       # демо всіх криптографічних примітивів
 ```
 

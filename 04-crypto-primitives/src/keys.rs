@@ -104,6 +104,42 @@ pub fn btc_address_p2wpkh(verifying_key: &Secp256k1VerifyingKey) -> String {
     segwit::encode_v0(bech32::hrp::BC, &h160).unwrap()
 }
 
+// P2TR (Taproot) — починається з 'bc1p', witness version 1, Bech32m.
+// Taproot використовує x-only pubkey: лише X-координата (32 байти) без маркера 02/03.
+// Повна BIP-341 реалізація застосовує TapTweak (tagged SHA256) до pubkey,
+// тут — спрощена версія без tweak для демонстрації формату адреси.
+pub fn btc_address_p2tr(verifying_key: &Secp256k1VerifyingKey) -> String {
+    use bech32::segwit;
+    let compressed = verifying_key.to_encoded_point(true); // 02/03 || X (33 bytes)
+    let x_only = &compressed.as_bytes()[1..]; // лише X-координата (32 bytes)
+    // witness version 1 → Bech32m (відрізняється від Bech32 у P2WPKH)
+    segwit::encode_v1(bech32::hrp::BC, x_only).unwrap()
+}
+
+// P2SH M-of-N multisig — адреса, підписати яку можуть M з N учасників.
+// Redeem script: OP_M <pubkey1> ... <pubkeyN> OP_N OP_CHECKMULTISIG
+// Адреса: Base58Check( 0x05 || hash160(redeem_script) ), починається з '3'.
+pub fn btc_address_multisig(pub_keys: &[Secp256k1VerifyingKey], m: usize) -> String {
+    let n = pub_keys.len();
+    let mut script = vec![0x50 + m as u8]; // OP_M (OP_2 = 0x52, OP_3 = 0x53, ...)
+
+    for vk in pub_keys {
+        let compressed = vk.to_encoded_point(true);
+        let bytes = compressed.as_bytes();
+        script.push(bytes.len() as u8); // OP_PUSH_33 (0x21) — довжина стиснутого ключа
+        script.extend_from_slice(bytes);
+    }
+
+    script.push(0x50 + n as u8); // OP_N
+    script.push(0xae); // OP_CHECKMULTISIG
+
+    // P2SH: hash160 від redeem script, з версійним байтом 0x05 для mainnet
+    let h160 = hash160(&script);
+    let mut payload = vec![0x05u8];
+    payload.extend_from_slice(&h160);
+    bs58::encode(payload).with_check().into_string()
+}
+
 // =============================================================================
 // ed25519 — крива для Solana (і SSH, GPG, Monero)
 // =============================================================================

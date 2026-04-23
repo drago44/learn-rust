@@ -35,6 +35,7 @@ pub fn run() {
         "  BTC P2WPKH:   {}",
         keys::btc_address_p2wpkh(&verifying_key)
     );
+    println!("  BTC P2TR:     {}", keys::btc_address_p2tr(&verifying_key));
 
     // ## ed25519 — Solana
     println!("\n=== Ключі: ed25519 (Solana) ===");
