@@ -18,6 +18,18 @@ fn hash_keccak256(input: &str) -> String {
     hex::encode(output)
 }
 
+fn eth_address(verifying_key: &VerifyingKey) -> String {
+    let pub_key = verifying_key.to_encoded_point(false);
+    let pub_bytes = &pub_key.as_bytes()[1..]; // прибираємо 04
+
+    let mut hasher = Keccak::v256();
+    let mut hash = [0u8; 32];
+    hasher.update(pub_bytes);
+    hasher.finalize(&mut hash);
+
+    format!("0x{}", hex::encode(&hash[12..])) // останні 20 байтів
+}
+
 fn generate_keypair() {
     let mut rng = rand::rng();
     let mut secret_bytes = [0u8; 32];
@@ -32,6 +44,7 @@ fn generate_keypair() {
         "Public key:  {}",
         hex::encode(verifying_key.to_encoded_point(false).as_bytes())
     );
+    println!("ETH address: {}", eth_address(&verifying_key));
 }
 
 fn main() {
