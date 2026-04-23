@@ -1,4 +1,4 @@
-use crypto_primitives::{hashing, keys, signing};
+use crypto_primitives::{hashing, keys, mnemonic, signing};
 
 fn main() {
     let msg = "hello crypto";
@@ -25,4 +25,10 @@ fn main() {
         "Tampered:    {}",
         signing::verify_message(&verifying_key, "evil", &sig)
     );
+
+    // --- Мнемоніка ---
+    let mnemonic = mnemonic::generate_mnemonic();
+    println!("Mnemonic: {}", mnemonic);
+    let seed = mnemonic.to_seed(""); // "" = без пароля
+    println!("Seed:     {}", hex::encode(&seed[..8])); // перші 8 байт для читабельності
 }
