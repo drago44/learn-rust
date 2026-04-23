@@ -8,8 +8,10 @@ bech32 = "0.11.1"
 bip39 = "2.2.2"
 blake3 = "1.8.4"
 bs58 = "0.5.1"
+clap = { version = "4.6.1", features = ["derive"] }
 coins-bip32 = "0.13.0"
 ed25519-dalek = { version = "2.2.0", features = ["rand_core"] }
+ed25519-dalek-bip32 = "0.3.0"
 hex = "0.4.3"
 k256 = { version = "0.13.4", features = ["ecdsa", "sha256"] }
 rand = "0.10.1"

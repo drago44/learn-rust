@@ -1,75 +1,111 @@
-use crypto_primitives::{hashing, hdwallet, keys, mnemonic, signing};
+use clap::{Parser, Subcommand};
+use crypto_primitives::{demo, hdwallet, keys, mnemonic, signing};
+
+#[derive(Parser)]
+#[command(name = "wallet", about = "Crypto wallet CLI")]
+struct Cli {
+    #[command(subcommand)]
+    command: Command,
+}
+
+#[derive(Subcommand)]
+enum Command {
+    /// Генерує нову мнемоніку та адреси для ETH, BTC, SOL
+    New,
+    /// Деривує адреси по індексу з існуючої мнемоніки
+    Derive {
+        #[arg(short, long, default_value = "0")]
+        index: u32,
+    },
+    /// Підписує повідомлення приватним ключем з мнемоніки
+    Sign {
+        #[arg(short, long)]
+        message: String,
+    },
+    /// Запускає демо всіх криптографічних примітивів
+    Demo,
+}
+
+//   cargo run -- new
+//   cargo run -- derive --index 1
+//   cargo run -- sign --message "hello"
+//   cargo run -- demo
+// Читає рядки з stdin доки не набереться 12 або 24 слова.
+// Вирішує проблему коли мнемоніка переноситься на кілька рядків при вставці.
+fn read_mnemonic() -> String {
+    let mut words: Vec<String> = Vec::new();
+    for line in std::io::stdin().lines() {
+        let line = line.unwrap();
+        words.extend(line.split_whitespace().map(|w| w.to_string()));
+        if words.len() >= 12 {
+            break;
+        }
+    }
+    words.join(" ")
+}
 
 fn main() {
-    let msg = "hello crypto";
+    let cli = Cli::parse();
 
-    // =========================================================================
-    // # Хешування
-    // =========================================================================
-    println!("=== Хешування ===");
-    println!("  Input:  {}", msg);
-    println!("  SHA256: {}", hashing::hash_sha256(msg));
-    println!("  BLAKE3: {}", hashing::hash_blake3(msg.as_bytes()));
-    println!(
-        "  Keccak: {}",
-        hex::encode(hashing::hash_keccak256(msg.as_bytes()))
-    );
+    match cli.command {
+        Command::New => {
+            let m = mnemonic::generate_mnemonic();
+            println!("Mnemonic:    {}", m);
+            let seed = m.to_seed("");
 
-    // =========================================================================
-    // # Ключі
-    // =========================================================================
+            let (_, eth_vk) = hdwallet::derive_eth_keypair(&seed, 0);
+            println!("ETH:         {}", keys::eth_address_checksum(&eth_vk));
+            println!("BTC P2PKH:   {}", keys::btc_address_p2pkh(&eth_vk));
+            println!("BTC P2WPKH:  {}", keys::btc_address_p2wpkh(&eth_vk));
 
-    // ## secp256k1 — ETH / BTC
-    println!("\n=== Ключі: secp256k1 (ETH/BTC) ===");
-    let (signing_key, verifying_key) = keys::generate_secp256k1_keypair();
-    println!("  ETH address:     {}", keys::eth_address(&verifying_key));
-    println!(
-        "  ETH checksum:    {}",
-        keys::eth_address_checksum(&verifying_key)
-    );
-    println!(
-        "  BTC P2PKH:       {}",
-        keys::btc_address_p2pkh(&verifying_key)
-    );
-    println!(
-        "  BTC P2WPKH:      {}",
-        keys::btc_address_p2wpkh(&verifying_key)
-    );
+            let sol = hdwallet::derive_sol_keypair(&seed, 0);
+            println!(
+                "SOL:         {}",
+                keys::solana_address(&sol.verifying_key())
+            );
+        }
 
-    // ## ed25519 — Solana
-    println!("\n=== Ключі: ed25519 (Solana) ===");
-    let (_sol_signing, sol_verifying) = keys::generate_ed25519_keypair();
-    println!(
-        "  SOL address:     {}",
-        keys::solana_address(&sol_verifying)
-    );
+        Command::Derive { index } => {
+            println!("Enter mnemonic:");
+            let phrase = read_mnemonic();
 
-    // =========================================================================
-    // # Підписування (secp256k1)
-    // =========================================================================
-    println!("\n=== Підписування ===");
-    let sig = signing::sign_message(&signing_key, msg);
-    println!("  Message:   {}", msg);
-    println!("  Signature: {}", hex::encode(sig.to_bytes()));
-    println!(
-        "  Valid:     {}",
-        signing::verify_message(&verifying_key, msg, &sig)
-    );
-    println!(
-        "  Tampered:  {}",
-        signing::verify_message(&verifying_key, "evil", &sig)
-    );
+            let m = mnemonic::mnemonic_from_phrase(&phrase).expect("Невалідна мнемоніка");
+            let seed = m.to_seed("");
 
-    // =========================================================================
-    // # HD гаманець (BIP39 → BIP32 → BIP44)
-    // =========================================================================
-    println!("\n=== HD Гаманець ===");
-    let mnemonic = mnemonic::generate_mnemonic();
-    println!("  Mnemonic: {}", mnemonic);
-    let seed = mnemonic.to_seed("");
-    println!("  Seed:     {}", hex::encode(&seed[..8]));
-    let (_, hd_verifying0) = hdwallet::derive_eth_keypair(&seed, 0);
-    let (_, hd_verifying1) = hdwallet::derive_eth_keypair(&seed, 1);
-    println!("  ETH[0]:   {}", keys::eth_address(&hd_verifying0));
-    println!("  ETH[1]:   {}", keys::eth_address(&hd_verifying1));
+            let (_, eth_vk) = hdwallet::derive_eth_keypair(&seed, index);
+            println!(
+                "ETH[{}]:      {}",
+                index,
+                keys::eth_address_checksum(&eth_vk)
+            );
+            println!("BTC P2PKH:   {}", keys::btc_address_p2pkh(&eth_vk));
+            println!("BTC P2WPKH:  {}", keys::btc_address_p2wpkh(&eth_vk));
+
+            let sol = hdwallet::derive_sol_keypair(&seed, index);
+            println!(
+                "SOL[{}]:      {}",
+                index,
+                keys::solana_address(&sol.verifying_key())
+            );
+        }
+
+        Command::Sign { message } => {
+            println!("Enter mnemonic:");
+            let phrase = read_mnemonic();
+
+            let m = mnemonic::mnemonic_from_phrase(&phrase).expect("Невалідна мнемоніка");
+            let seed = m.to_seed("");
+
+            let (signing_key, verifying_key) = hdwallet::derive_eth_keypair(&seed, 0);
+            let sig = signing::sign_message(&signing_key, &message);
+            println!("Message:     {}", message);
+            println!("Signature:   {}", hex::encode(sig.to_bytes()));
+            println!(
+                "Valid:       {}",
+                signing::verify_message(&verifying_key, &message, &sig)
+            );
+        }
+
+        Command::Demo => demo::run(),
+    }
 }

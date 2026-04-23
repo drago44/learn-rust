@@ -1,4 +1,5 @@
 // Публічні модулі крейту. Кожен модуль — окрема зона відповідальності.
+pub mod demo; // Демо всіх примітивів (запуск через `wallet demo`)
 pub mod hashing; // SHA-256, BLAKE3, Keccak-256
 pub mod hdwallet; // HD гаманці (BIP32, BIP44)
 pub mod keys; // secp256k1 (ETH/BTC) та ed25519 (Solana) ключі та адреси
