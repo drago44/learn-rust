@@ -43,6 +43,31 @@ pub fn eth_address(verifying_key: &Secp256k1VerifyingKey) -> String {
     format!("0x{}", hex::encode(&hash[12..])) // беремо байти 12..32 (останні 20)
 }
 
+// EIP-55 — checksum адреса: регістр кожної hex-букви визначається keccak256 хешем.
+// Стандарт де-факто — MetaMask і Etherscan завжди показують адреси в такому форматі.
+// Якщо переплутати регістр букви — гаманець визначить адресу як невалідну.
+pub fn eth_address_checksum(verifying_key: &Secp256k1VerifyingKey) -> String {
+    let addr = eth_address(verifying_key);
+    let hex = &addr[2..]; // прибираємо "0x"
+    let hash = hash_keccak256(hex.as_bytes());
+
+    let checksummed: String = hex
+        .chars()
+        .enumerate()
+        .map(|(i, c)| {
+            if c.is_ascii_digit() {
+                c
+            } else if (hash[i / 2] >> (if i % 2 == 0 { 4 } else { 0 }) & 0xf) >= 8 {
+                c.to_ascii_uppercase()
+            } else {
+                c.to_ascii_lowercase()
+            }
+        })
+        .collect();
+
+    format!("0x{}", checksummed)
+}
+
 // =============================================================================
 // Bitcoin адреси (secp256k1)
 // =============================================================================

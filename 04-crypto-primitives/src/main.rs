@@ -24,6 +24,10 @@ fn main() {
     let (signing_key, verifying_key) = keys::generate_secp256k1_keypair();
     println!("  ETH address:     {}", keys::eth_address(&verifying_key));
     println!(
+        "  ETH checksum:    {}",
+        keys::eth_address_checksum(&verifying_key)
+    );
+    println!(
         "  BTC P2PKH:       {}",
         keys::btc_address_p2pkh(&verifying_key)
     );
