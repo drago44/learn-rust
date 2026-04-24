@@ -3,8 +3,9 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Balance {
     pub address: String,
-    pub amount: u64, // satoshi / wei / lamport
+    pub amount: u64, // satoshi / gwei / lamport
     pub symbol: String,
+    pub decimals: u8, // скільки знаків: BTC=8, ETH=9, SOL=9
 }
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -76,6 +76,7 @@ pub async fn get_balance(address: &str) -> Result<Balance> {
         address: address.to_string(),
         amount: confirmed + unconfirmed,
         symbol: "BTC".to_string(),
+        decimals: 8,
     })
 }
 
