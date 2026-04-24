@@ -19,6 +19,7 @@ pub async fn run_cmd(
             Ok(txs) => print_txs(&txs, symbol, decimals),
             Err(e) => eprintln!("Error: {e}"),
         },
+        ChainCmd::Watch { .. } => unreachable!("watch перехоплюється в main"),
     }
 }
 

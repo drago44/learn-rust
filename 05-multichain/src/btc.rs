@@ -1,5 +1,8 @@
 use anyhow::Result;
+use futures_util::{SinkExt, StreamExt};
 use serde::Deserialize;
+use serde_json::json;
+use tokio_tungstenite::{connect_async, tungstenite::Message};
 
 use crate::types::{Balance, Tx};
 
@@ -119,4 +122,33 @@ pub async fn get_txs(address: &str) -> Result<Vec<Tx>> {
         .collect();
 
     Ok(txs)
+}
+
+pub async fn watch(address: &str) -> Result<()> {
+    let (mut ws, _) = connect_async("wss://mempool.space/api/v1/ws").await?;
+
+    // Mempool.space: підписуємось на транзакції конкретної адреси
+    ws.send(Message::text(json!({"track-address": address}).to_string()))
+        .await?;
+
+    println!("Watching BTC {address} — очікуємо нові транзакції...\n");
+
+    while let Some(msg) = ws.next().await {
+        let text = match msg? {
+            Message::Text(t) => t,
+            _ => continue,
+        };
+
+        let v: serde_json::Value = serde_json::from_str(&text)?;
+
+        // Mempool.space надсилає "address-transactions" коли з'являється нова tx
+        if let Some(txs) = v.get("address-transactions").and_then(|t| t.as_array()) {
+            for tx in txs {
+                let txid = tx.get("txid").and_then(|t| t.as_str()).unwrap_or("?");
+                println!("Нова транзакція: {}", &txid[..8]);
+            }
+        }
+    }
+
+    Ok(())
 }

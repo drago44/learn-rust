@@ -1,6 +1,8 @@
 use anyhow::{Result, anyhow};
+use futures_util::{SinkExt, StreamExt};
 use serde::Deserialize;
 use serde_json::json;
+use tokio_tungstenite::{connect_async, tungstenite::Message};
 
 use crate::types::{Balance, Tx};
 
@@ -146,4 +148,44 @@ pub async fn get_txs(address: &str) -> Result<Vec<Tx>> {
     }
 
     Ok(txs)
+}
+
+pub async fn watch(address: &str) -> Result<()> {
+    let (mut ws, _) = connect_async("wss://api.mainnet-beta.solana.com").await?;
+
+    // accountSubscribe — Solana нативно підтримує підписку на конкретний акаунт
+    ws.send(Message::text(
+        json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "accountSubscribe",
+            "params": [address, {"encoding": "base64", "commitment": "confirmed"}]
+        })
+        .to_string(),
+    ))
+    .await?;
+
+    println!("Watching SOL {address} — очікуємо зміни балансу...\n");
+
+    while let Some(msg) = ws.next().await {
+        let text = match msg? {
+            Message::Text(t) => t,
+            _ => continue,
+        };
+
+        let v: serde_json::Value = serde_json::from_str(&text)?;
+
+        // Notification приходить коли баланс акаунту змінюється
+        if let Some(value) = v
+            .get("params")
+            .and_then(|p| p.get("result"))
+            .and_then(|r| r.get("value"))
+        {
+            let lamports = value.get("lamports").and_then(|l| l.as_u64()).unwrap_or(0);
+            let sol = lamports as f64 / 1_000_000_000.0;
+            println!("Баланс змінився: {sol:.9} SOL");
+        }
+    }
+
+    Ok(())
 }

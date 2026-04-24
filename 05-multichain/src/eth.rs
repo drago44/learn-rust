@@ -1,7 +1,9 @@
 use alloy::primitives::{Address, U256};
 use alloy::providers::{Provider, ProviderBuilder};
 use anyhow::Result;
+use futures_util::{SinkExt, StreamExt};
 use serde::Deserialize;
+use tokio_tungstenite::{connect_async, tungstenite::Message};
 
 use crate::types::{Balance, Tx};
 
@@ -69,4 +71,41 @@ pub async fn get_txs(address: &str) -> Result<Vec<Tx>> {
         .collect();
 
     Ok(txs)
+}
+
+pub async fn watch(address: &str) -> Result<()> {
+    // PublicNode підтримує WebSocket з eth_subscribe
+    let (mut ws, _) = connect_async("wss://ethereum.publicnode.com").await?;
+
+    // newHeads — отримуємо кожен новий блок (ETH не має адресних підписок без платного RPC)
+    ws.send(Message::text(
+        serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "eth_subscribe",
+            "params": ["newHeads"]
+        })
+        .to_string(),
+    ))
+    .await?;
+
+    println!("Watching ETH новi блоки (адреса: {address})\n");
+
+    while let Some(msg) = ws.next().await {
+        let text = match msg? {
+            Message::Text(t) => t,
+            _ => continue,
+        };
+
+        let v: serde_json::Value = serde_json::from_str(&text)?;
+
+        // Після підписки приходить підтвердження, потім — notification по кожному блоку
+        if let Some(block) = v.get("params").and_then(|p| p.get("result")) {
+            let number = block.get("number").and_then(|n| n.as_str()).unwrap_or("?");
+            let hash = block.get("hash").and_then(|h| h.as_str()).unwrap_or("?");
+            println!("Новий блок {} | {}", number, &hash[..10]);
+        }
+    }
+
+    Ok(())
 }

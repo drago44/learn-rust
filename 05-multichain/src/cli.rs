@@ -26,4 +26,6 @@ pub enum ChainCmd {
     Balance { address: String },
     /// Показати останні транзакції адреси
     Txs { address: String },
+    /// Слідкувати за адресою в реальному часі (WebSocket)
+    Watch { address: String },
 }
