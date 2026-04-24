@@ -1,25 +1,24 @@
 use anyhow::Result;
 use multichain::types::{Balance, Tx};
 
-use crate::cli::ChainCmd;
+use crate::cli::QueryCmd;
 
 pub async fn run_cmd(
-    cmd: ChainCmd,
+    cmd: QueryCmd,
     symbol: &str,
     decimals: u8,
     get_balance: impl AsyncFn(&str) -> Result<Balance>,
     get_txs: impl AsyncFn(&str) -> Result<Vec<Tx>>,
 ) {
     match cmd {
-        ChainCmd::Balance { address } => match get_balance(&address).await {
+        QueryCmd::Balance { address } => match get_balance(&address).await {
             Ok(b) => print_balance(&b),
             Err(e) => eprintln!("Error: {e}"),
         },
-        ChainCmd::Txs { address } => match get_txs(&address).await {
+        QueryCmd::Txs { address } => match get_txs(&address).await {
             Ok(txs) => print_txs(&txs, symbol, decimals),
             Err(e) => eprintln!("Error: {e}"),
         },
-        ChainCmd::Watch { .. } => unreachable!("watch перехоплюється в main"),
     }
 }
 

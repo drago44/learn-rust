@@ -1,9 +1,10 @@
-use anyhow::Result;
+use anyhow::{Result, anyhow};
+use k256::ecdsa::SigningKey;
 use serde::Deserialize;
 
 use crate::types::{Balance, Tx};
 
-const API: &str = "https://api.trongrid.io/v1";
+const API: &str = "https://nile.trongrid.io/v1";
 
 // TronGrid повертає дані у { "data": [...], "success": true }
 #[derive(Deserialize)]
@@ -109,4 +110,107 @@ pub async fn get_txs(address: &str) -> Result<Vec<Tx>> {
         .collect();
 
     Ok(txs)
+}
+
+pub async fn send(to: &str, amount_trx: f64, private_key: &str) -> Result<String> {
+    // Shasta — Tron testnet
+    const NILE: &str = "https://nile.trongrid.io";
+
+    let client = reqwest::Client::new();
+
+    // Крок 1: TronGrid створює unsigned транзакцію і повертає txID (хеш для підпису)
+    let create_resp: serde_json::Value = client
+        .post(format!("{NILE}/wallet/createtransaction"))
+        .json(&serde_json::json!({
+            "owner_address": to_hex_address(private_key)?,
+            "to_address": to_hex_address_from_base58(to)?,
+            "amount": (amount_trx * 1_000_000.0) as u64  // TRX → SUN
+        }))
+        .send()
+        .await?
+        .json()
+        .await?;
+
+    let tx_id_hex = create_resp["txID"]
+        .as_str()
+        .ok_or_else(|| anyhow!("no txID: {create_resp}"))?;
+
+    // Крок 2: підписуємо txID (32 байти хешу) ключем secp256k1
+    let key_bytes = hex::decode(private_key)?;
+    let signing_key = SigningKey::from_slice(&key_bytes)?;
+    let hash = hex::decode(tx_id_hex)?;
+
+    let (sig, recovery_id) = signing_key.sign_prehash_recoverable(&hash)?;
+    let mut sig_bytes = sig.to_bytes().to_vec(); // r(32) + s(32)
+    sig_bytes.push(recovery_id.to_byte()); // recovery id
+
+    // Крок 3: додаємо підпис до транзакції і broadcast
+    let mut signed_tx = create_resp.clone();
+    signed_tx["signature"] = serde_json::json!([hex::encode(&sig_bytes)]);
+
+    let broadcast_resp: serde_json::Value = client
+        .post(format!("{NILE}/wallet/broadcasttransaction"))
+        .json(&signed_tx)
+        .send()
+        .await?
+        .json()
+        .await?;
+
+    if broadcast_resp["result"].as_bool() != Some(true) {
+        return Err(anyhow!("{}", broadcast_resp));
+    }
+
+    Ok(tx_id_hex.to_string())
+}
+
+// Tron адреси внутрішньо зберігаються у hex форматі (41xxxxxx)
+fn to_hex_address_from_base58(addr: &str) -> Result<String> {
+    let bytes = bs58::decode(addr).into_vec()?;
+    Ok(hex::encode(&bytes[..bytes.len() - 4])) // прибираємо checksum (останні 4 байти)
+}
+
+// Отримуємо адресу власника з приватного ключа
+fn to_hex_address(private_key_hex: &str) -> Result<String> {
+    use k256::ecdsa::VerifyingKey;
+    use sha3::{Digest as _, Keccak256};
+
+    let key_bytes = hex::decode(private_key_hex)?;
+    let signing_key = SigningKey::from_slice(&key_bytes)?;
+    let verifying_key = VerifyingKey::from(&signing_key);
+
+    // Некомпресована публічна точка (65 байт: 04 || x || y)
+    let pubkey_bytes = verifying_key.to_encoded_point(false);
+    let pubkey_uncompressed = pubkey_bytes.as_bytes();
+
+    // Ethereum-стиль адреса: keccak256 останніх 64 байт pubkey → останні 20 байт
+    let hash = Keccak256::digest(&pubkey_uncompressed[1..]);
+    let eth_addr = &hash[12..]; // останні 20 байт
+
+    // Tron адреса = 0x41 prefix + eth_addr
+    let mut tron = vec![0x41u8];
+    tron.extend_from_slice(eth_addr);
+    Ok(hex::encode(&tron))
+}
+
+// Повертає (private_key_hex, address_base58check)
+pub fn keygen() -> (String, String) {
+    use k256::ecdsa::SigningKey;
+    use sha2::{Digest, Sha256};
+    use sha3::Keccak256;
+
+    let key_bytes: [u8; 32] = rand::random();
+    let signing_key = SigningKey::from_slice(&key_bytes).expect("valid key");
+
+    let pubkey = signing_key.verifying_key().to_encoded_point(false);
+    let hash = Keccak256::digest(&pubkey.as_bytes()[1..]);
+
+    // Tron адреса: 0x41 + останні 20 байт keccak256(pubkey)
+    let mut addr = vec![0x41u8];
+    addr.extend_from_slice(&hash[12..]);
+
+    // Base58Check: addr + sha256(sha256(addr))[..4]
+    let checksum = Sha256::digest(Sha256::digest(&addr));
+    addr.extend_from_slice(&checksum[..4]);
+
+    (hex::encode(key_bytes), bs58::encode(&addr).into_string())
 }

@@ -1,4 +1,5 @@
 use anyhow::{Result, anyhow};
+use ed25519_dalek::{Signer, SigningKey};
 use futures_util::{SinkExt, StreamExt};
 use serde::Deserialize;
 use serde_json::json;
@@ -188,4 +189,138 @@ pub async fn watch(address: &str) -> Result<()> {
     }
 
     Ok(())
+}
+
+// Solana використовує compact-u16 для довжин масивів у серіалізації транзакцій
+fn compact_u16(n: u16) -> Vec<u8> {
+    match n {
+        0..=127 => vec![n as u8],
+        128..=16383 => vec![(n as u8 & 0x7f) | 0x80, (n >> 7) as u8],
+        _ => vec![
+            (n as u8 & 0x7f) | 0x80,
+            ((n >> 7) as u8 & 0x7f) | 0x80,
+            (n >> 14) as u8,
+        ],
+    }
+}
+
+// Будуємо байти повідомлення транзакції (те що підписується)
+fn build_message(payer: &[u8; 32], to: &[u8; 32], lamports: u64, blockhash: &[u8; 32]) -> Vec<u8> {
+    // SystemProgram — всі нулі (base58: 11111111111111111111111111111111)
+    const SYSTEM_PROGRAM: [u8; 32] = [0u8; 32];
+
+    let mut msg = Vec::new();
+
+    // Header: 1 підписант, 0 readonly-підписантів, 1 readonly без підпису (system program)
+    msg.extend_from_slice(&[1u8, 0, 1]);
+
+    // Акаунти: payer (index 0), to (index 1), system program (index 2)
+    msg.extend_from_slice(&compact_u16(3));
+    msg.extend_from_slice(payer);
+    msg.extend_from_slice(to);
+    msg.extend_from_slice(&SYSTEM_PROGRAM);
+
+    // Recent blockhash
+    msg.extend_from_slice(blockhash);
+
+    // Одна інструкція
+    msg.extend_from_slice(&compact_u16(1));
+
+    // Інструкція SystemProgram::Transfer:
+    msg.push(2); // program_id_index = system program (index 2)
+    msg.extend_from_slice(&compact_u16(2)); // 2 акаунти: [payer, to]
+    msg.extend_from_slice(&[0u8, 1]); // індекси акаунтів
+    msg.extend_from_slice(&compact_u16(12)); // data: 4 + 8 байт
+    msg.extend_from_slice(&2u32.to_le_bytes()); // Transfer = variant 2
+    msg.extend_from_slice(&lamports.to_le_bytes());
+
+    msg
+}
+
+pub async fn send(to: &str, amount_sol: f64, private_key: &str) -> Result<String> {
+    // Solana ключ — base58-рядок із 64 байт (32 seed + 32 pubkey)
+    let key_bytes = bs58::decode(private_key).into_vec()?;
+    let seed: [u8; 32] = key_bytes[..32].try_into()?;
+    let signing_key = SigningKey::from_bytes(&seed);
+    let payer_pubkey: [u8; 32] = signing_key.verifying_key().to_bytes();
+
+    let to_bytes = bs58::decode(to).into_vec()?;
+    let to_pubkey: [u8; 32] = to_bytes
+        .try_into()
+        .map_err(|_| anyhow!("invalid to address"))?;
+
+    let lamports = (amount_sol * 1_000_000_000.0) as u64;
+
+    let client = reqwest::Client::new();
+    const DEVNET: &str = "https://api.devnet.solana.com";
+
+    // Отримуємо свіжий blockhash — обов'язковий для кожної транзакції
+    let bh_resp: serde_json::Value = client
+        .post(DEVNET)
+        .json(&json!({"jsonrpc":"2.0","id":1,"method":"getLatestBlockhash","params":[]}))
+        .send()
+        .await?
+        .json()
+        .await?;
+
+    let blockhash_str = bh_resp["result"]["value"]["blockhash"]
+        .as_str()
+        .ok_or_else(|| anyhow!("no blockhash"))?;
+    let blockhash_bytes = bs58::decode(blockhash_str).into_vec()?;
+    let blockhash: [u8; 32] = blockhash_bytes
+        .try_into()
+        .map_err(|_| anyhow!("bad blockhash"))?;
+
+    // Будуємо і підписуємо транзакцію
+    let message = build_message(&payer_pubkey, &to_pubkey, lamports, &blockhash);
+    let signature = signing_key.sign(&message);
+    let sig_bytes: [u8; 64] = signature.to_bytes();
+
+    // Повна транзакція: compact_u16(1) + signature + message
+    let mut tx_bytes = compact_u16(1);
+    tx_bytes.extend_from_slice(&sig_bytes);
+    tx_bytes.extend_from_slice(&message);
+
+    // Відправляємо base64-encoded транзакцію
+    use base64::{Engine, engine::general_purpose::STANDARD};
+    let tx_b64 = STANDARD.encode(&tx_bytes);
+
+    let send_resp: serde_json::Value = client
+        .post(DEVNET)
+        .json(&json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "sendTransaction",
+            "params": [tx_b64, {"encoding": "base64"}]
+        }))
+        .send()
+        .await?
+        .json()
+        .await?;
+
+    if let Some(err) = send_resp.get("error") {
+        return Err(anyhow!("{}", err));
+    }
+
+    let sig = send_resp["result"]
+        .as_str()
+        .ok_or_else(|| anyhow!("no signature in response"))?;
+    Ok(sig.to_string())
+}
+
+// Повертає (private_key_base58, address_base58)
+pub fn keygen() -> (String, String) {
+    let seed: [u8; 32] = rand::random();
+    let signing_key = SigningKey::from_bytes(&seed);
+    let pubkey = signing_key.verifying_key().to_bytes();
+
+    // Solana зберігає ключ як 64 байти: seed(32) + pubkey(32)
+    let mut full_key = [0u8; 64];
+    full_key[..32].copy_from_slice(&seed);
+    full_key[32..].copy_from_slice(&pubkey);
+
+    (
+        bs58::encode(full_key).into_string(),
+        bs58::encode(pubkey).into_string(),
+    )
 }

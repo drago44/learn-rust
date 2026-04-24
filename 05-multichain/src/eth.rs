@@ -1,5 +1,8 @@
+use alloy::network::EthereumWallet;
 use alloy::primitives::{Address, U256};
 use alloy::providers::{Provider, ProviderBuilder};
+use alloy::rpc::types::TransactionRequest;
+use alloy::signers::local::PrivateKeySigner;
 use anyhow::Result;
 use futures_util::{SinkExt, StreamExt};
 use serde::Deserialize;
@@ -108,4 +111,43 @@ pub async fn watch(address: &str) -> Result<()> {
     }
 
     Ok(())
+}
+
+pub async fn send(to: &str, amount_eth: f64, private_key: &str) -> Result<String> {
+    // Парсимо приватний ключ і створюємо гаманець
+    let signer: PrivateKeySigner = private_key.parse()?;
+    let wallet = EthereumWallet::from(signer);
+
+    // Підключаємось до Sepolia testnet
+    let provider = ProviderBuilder::new()
+        .wallet(wallet)
+        .connect_http("https://ethereum-sepolia.publicnode.com".parse()?);
+
+    let to_addr: Address = to.parse()?;
+
+    // ETH → Wei: 1 ETH = 10^18 Wei
+    let wei = U256::from((amount_eth * 1e18) as u128);
+
+    let tx = TransactionRequest::default().to(to_addr).value(wei);
+
+    // Відправляємо — provider автоматично підписує через wallet
+    let pending = provider.send_transaction(tx).await?;
+    let hash = *pending.tx_hash();
+
+    Ok(format!("{hash:#x}"))
+}
+
+// Повертає (private_key_hex, address)
+pub fn keygen() -> (String, String) {
+    use k256::ecdsa::SigningKey;
+    use sha3::{Digest, Keccak256};
+
+    let key_bytes: [u8; 32] = rand::random();
+    let signing_key = SigningKey::from_slice(&key_bytes).expect("valid key");
+
+    let pubkey = signing_key.verifying_key().to_encoded_point(false);
+    let hash = Keccak256::digest(&pubkey.as_bytes()[1..]); // без 0x04 префікса
+    let address = format!("0x{}", hex::encode(&hash[12..])); // останні 20 байт
+
+    (hex::encode(key_bytes), address)
 }
