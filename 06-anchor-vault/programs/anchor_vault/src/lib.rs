@@ -8,7 +8,7 @@ use anchor_lang::prelude::*;
 pub use constants::*;
 pub use instructions::*;
 
-declare_id!("CrV8n4giUjq9Zcmy9rqAmCca27TpZYu6QNbKKm4s3JGp");
+declare_id!("6doU3yt22cojkmVxdWeNTWSxYiRDXEjQueBJkRf1dbQ5");
 
 #[program]
 pub mod anchor_vault {
