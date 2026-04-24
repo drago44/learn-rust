@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-anchor_vault = "5dYVvcwovDtfULGiEE16qUxBekeKzneBY4DgwRtCMiwd"
+anchor_vault = "CrV8n4giUjq9Zcmy9rqAmCca27TpZYu6QNbKKm4s3JGp"
 
 [provider]
 cluster = "localnet"

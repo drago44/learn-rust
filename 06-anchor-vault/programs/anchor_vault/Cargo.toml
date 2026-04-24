@@ -34,3 +34,6 @@ solana-pubkey = "4.2.0"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }
+
+[lints.clippy]
+diverging_sub_expression = "allow"
