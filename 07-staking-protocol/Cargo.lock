@@ -4000,8 +4000,10 @@ dependencies = [
  "litesvm",
  "solana-keypair",
  "solana-message",
+ "solana-program-pack",
  "solana-pubkey 4.2.0",
  "solana-signer",
+ "solana-system-interface 3.2.0",
  "solana-transaction",
  "spl-token",
 ]

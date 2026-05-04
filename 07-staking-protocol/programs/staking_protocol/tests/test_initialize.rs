@@ -2,9 +2,11 @@ use anchor_lang::{solana_program::instruction::Instruction, InstructionData, ToA
 use litesvm::LiteSVM;
 use solana_keypair::Keypair;
 use solana_message::{Message, VersionedMessage};
+use solana_program_pack::Pack;
 use solana_pubkey::Pubkey;
 use solana_signer::Signer;
 use solana_transaction::versioned::VersionedTransaction;
+use spl_token::state::Mint;
 
 fn pool_pda(stake_mint: &Pubkey, program_id: &Pubkey) -> (Pubkey, u8) {
     Pubkey::find_program_address(&[b"pool", stake_mint.as_ref()], program_id)
@@ -14,13 +16,13 @@ fn create_mint(svm: &mut LiteSVM, payer: &Keypair, decimals: u8) -> Pubkey {
     let mint = Keypair::new();
     let mint_pubkey = mint.pubkey();
 
-    let rent = svm.minimum_balance_for_rent_exemption(spl_token::state::Mint::LEN);
+    let rent = svm.minimum_balance_for_rent_exemption(Mint::LEN);
 
     let create_account_ix = solana_system_interface::instruction::create_account(
         &payer.pubkey(),
         &mint_pubkey,
         rent,
-        spl_token::state::Mint::LEN as u64,
+        Mint::LEN as u64,
         &spl_token::id(),
     );
 
