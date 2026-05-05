@@ -1,5 +1,6 @@
 use crate::state::StakingPool;
 use anchor_lang::prelude::*;
+use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 
 #[derive(Accounts)]
 pub struct InitializePool<'info> {
@@ -15,9 +16,22 @@ pub struct InitializePool<'info> {
     )]
     pub pool: Account<'info, StakingPool>,
 
-    pub stake_mint: InterfaceAccount<'info, anchor_spl::token_interface::Mint>,
-    pub reward_mint: InterfaceAccount<'info, anchor_spl::token_interface::Mint>,
+    // vault зберігає застейкані токени; authority = pool PDA
+    #[account(
+        init,
+        payer = authority,
+        token::mint = stake_mint,
+        token::authority = pool,
+        token::token_program = token_program,
+        seeds = [b"vault", pool.key().as_ref()],
+        bump,
+    )]
+    pub vault: InterfaceAccount<'info, TokenAccount>,
 
+    pub stake_mint: InterfaceAccount<'info, Mint>,
+    pub reward_mint: InterfaceAccount<'info, Mint>,
+
+    pub token_program: Interface<'info, TokenInterface>,
     pub system_program: Program<'info, System>,
 }
 
@@ -27,6 +41,7 @@ pub fn initialize_pool_handler(ctx: Context<InitializePool>, reward_rate: u64) -
     pool.authority = ctx.accounts.authority.key();
     pool.stake_mint = ctx.accounts.stake_mint.key();
     pool.reward_mint = ctx.accounts.reward_mint.key();
+    pool.vault = ctx.accounts.vault.key();
     pool.total_staked = 0;
     pool.reward_rate = reward_rate;
     pool.reward_per_token_stored = 0;

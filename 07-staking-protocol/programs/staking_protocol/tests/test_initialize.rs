@@ -12,6 +12,10 @@ fn pool_pda(stake_mint: &Pubkey, program_id: &Pubkey) -> (Pubkey, u8) {
     Pubkey::find_program_address(&[b"pool", stake_mint.as_ref()], program_id)
 }
 
+fn vault_pda(pool: &Pubkey, program_id: &Pubkey) -> (Pubkey, u8) {
+    Pubkey::find_program_address(&[b"vault", pool.as_ref()], program_id)
+}
+
 fn create_mint(svm: &mut LiteSVM, payer: &Keypair, decimals: u8) -> Pubkey {
     let mint = Keypair::new();
     let mint_pubkey = mint.pubkey();
@@ -60,6 +64,7 @@ fn test_initialize_pool_ok() {
     let stake_mint = create_mint(&mut svm, &authority, 6);
     let reward_mint = create_mint(&mut svm, &authority, 6);
     let (pool, _) = pool_pda(&stake_mint, &program_id);
+    let (vault, _) = vault_pda(&pool, &program_id);
 
     let ix = Instruction::new_with_bytes(
         program_id,
@@ -67,8 +72,10 @@ fn test_initialize_pool_ok() {
         staking_protocol::accounts::InitializePool {
             authority: authority.pubkey(),
             pool,
+            vault,
             stake_mint,
             reward_mint,
+            token_program: spl_token::id(),
             system_program: anchor_lang::solana_program::system_program::ID,
         }
         .to_account_metas(None),
@@ -95,6 +102,7 @@ fn test_initialize_pool_duplicate_fails() {
     let stake_mint = create_mint(&mut svm, &authority, 6);
     let reward_mint = create_mint(&mut svm, &authority, 6);
     let (pool, _) = pool_pda(&stake_mint, &program_id);
+    let (vault, _) = vault_pda(&pool, &program_id);
 
     let make_ix = || {
         Instruction::new_with_bytes(
@@ -103,8 +111,10 @@ fn test_initialize_pool_duplicate_fails() {
             staking_protocol::accounts::InitializePool {
                 authority: authority.pubkey(),
                 pool,
+                vault,
                 stake_mint,
                 reward_mint,
+                token_program: spl_token::id(),
                 system_program: anchor_lang::solana_program::system_program::ID,
             }
             .to_account_metas(None),
