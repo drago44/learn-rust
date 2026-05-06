@@ -21,4 +21,8 @@ pub mod staking_protocol {
     pub fn stake(ctx: Context<Stake>, amount: u64) -> Result<()> {
         stake::stake_handler(ctx, amount)
     }
+
+    pub fn unstake(ctx: Context<Unstake>, amount: u64) -> Result<()> {
+        unstake::unstake_handler(ctx, amount)
+    }
 }

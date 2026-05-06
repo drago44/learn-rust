@@ -20,3 +20,11 @@ pub struct UserStake {
     pub reward_debt: u128,
     pub bump: u8,
 }
+
+#[account]
+pub struct UnstakeRequest {
+    pub owner: Pubkey,     // хто створив запит
+    pub amount: u64,       // скільки токенів виводять
+    pub request_time: i64, // unix timestamp коли створено
+    pub bump: u8,
+}
