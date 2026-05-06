@@ -17,4 +17,8 @@ pub mod staking_protocol {
     pub fn initialize_pool(ctx: Context<InitializePool>, reward_rate: u64) -> Result<()> {
         initialize::initialize_pool_handler(ctx, reward_rate)
     }
+
+    pub fn stake(ctx: Context<Stake>, amount: u64) -> Result<()> {
+        stake::stake_handler(ctx, amount)
+    }
 }

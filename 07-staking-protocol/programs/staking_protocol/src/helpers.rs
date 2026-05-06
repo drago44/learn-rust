@@ -1,4 +1,3 @@
-
 use crate::error::StakingError;
 use crate::state::StakingPool;
 use anchor_lang::prelude::*;
