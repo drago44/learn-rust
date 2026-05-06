@@ -22,13 +22,13 @@ pub struct Unstake<'info> {
     )]
     pub user_stake: Account<'info, UserStake>,
 
-    // Новий акаунт-квиток на вивід.
-    // Seeds містять timestamp — тому юзер може мати кілька паралельних запитів.
+    // Один активний запит на вивід на юзера.
+    // Щоб створити новий — спочатку треба claim попереднього.
     #[account(
         init,
         payer = user,
         space = 8 + 32 + 8 + 8 + 1,
-        seeds = [b"unstake", user.key().as_ref(), &Clock::get()?.unix_timestamp.to_le_bytes()],
+        seeds = [b"unstake", pool.key().as_ref(), user.key().as_ref()],
         bump,
     )]
     pub unstake_request: Account<'info, UnstakeRequest>,
