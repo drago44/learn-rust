@@ -8,7 +8,7 @@ use anchor_lang::prelude::*;
 
 pub use instructions::*;
 
-declare_id!("5h8i4GqwGy1zUvx1um5sgSJvEEs2hA3N9FCd6Paux6b");
+declare_id!("9RVXkeVnvNJs8Kw5t9cwWkxqpJem1TMTS518zhgk22UF");
 
 #[program]
 pub mod staking_protocol {
@@ -22,7 +22,7 @@ pub mod staking_protocol {
         stake::stake_handler(ctx, amount)
     }
 
-    pub fn unstake(ctx: Context<Unstake>, amount: u64) -> Result<()> {
-        unstake::unstake_handler(ctx, amount)
+    pub fn unstake(ctx: Context<Unstake>, amount: u64, request_time: i64) -> Result<()> {
+        unstake::unstake_handler(ctx, amount, request_time)
     }
 }

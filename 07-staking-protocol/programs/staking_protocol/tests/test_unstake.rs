@@ -20,8 +20,21 @@ fn user_stake_pda(pool: &Pubkey, user: &Pubkey, program_id: &Pubkey) -> (Pubkey,
     Pubkey::find_program_address(&[b"user", pool.as_ref(), user.as_ref()], program_id)
 }
 
-fn unstake_request_pda(pool: &Pubkey, user: &Pubkey, program_id: &Pubkey) -> (Pubkey, u8) {
-    Pubkey::find_program_address(&[b"unstake", pool.as_ref(), user.as_ref()], program_id)
+fn unstake_request_pda(
+    pool: &Pubkey,
+    user: &Pubkey,
+    request_time: i64,
+    program_id: &Pubkey,
+) -> (Pubkey, u8) {
+    Pubkey::find_program_address(
+        &[
+            b"unstake",
+            pool.as_ref(),
+            user.as_ref(),
+            &request_time.to_le_bytes(),
+        ],
+        program_id,
+    )
 }
 
 fn send(
@@ -170,11 +183,20 @@ fn test_unstake_decreases_total_staked() {
 
     let (_stake_mint, pool, _vault) = setup_with_stake(&mut svm, &authority, &user, 1_000_000);
     let (user_stake, _) = user_stake_pda(&pool, &user.pubkey(), &program_id);
-    let (unstake_request, _) = unstake_request_pda(&pool, &user.pubkey(), &program_id);
+
+    // request_time — довільне число для унікальності PDA
+    // клієнт зазвичай передає Clock::get(), але в тесті просто беремо константу
+    let request_time = 1_000_000i64;
+    let (unstake_request, _) =
+        unstake_request_pda(&pool, &user.pubkey(), request_time, &program_id);
 
     let ix = Instruction::new_with_bytes(
         program_id,
-        &staking_protocol::instruction::Unstake { amount: 400_000 }.data(),
+        &staking_protocol::instruction::Unstake {
+            amount: 400_000,
+            request_time,
+        }
+        .data(),
         staking_protocol::accounts::Unstake {
             user: user.pubkey(),
             pool,
@@ -202,6 +224,69 @@ fn test_unstake_decreases_total_staked() {
 }
 
 #[test]
+fn test_unstake_multiple_requests() {
+    let program_id = staking_protocol::id();
+    let authority = Keypair::new();
+    let user = Keypair::new();
+    let mut svm = LiteSVM::new();
+
+    let bytes = include_bytes!("../../../target/deploy/staking_protocol.so");
+    svm.add_program(program_id, bytes).unwrap();
+    svm.airdrop(&authority.pubkey(), 10_000_000_000).unwrap();
+    svm.airdrop(&user.pubkey(), 10_000_000_000).unwrap();
+
+    let (_stake_mint, pool, _vault) = setup_with_stake(&mut svm, &authority, &user, 1_000_000);
+    let (user_stake, _) = user_stake_pda(&pool, &user.pubkey(), &program_id);
+
+    // Перший unstake
+    let (req1, _) = unstake_request_pda(&pool, &user.pubkey(), 1_000_000, &program_id);
+    let ix1 = Instruction::new_with_bytes(
+        program_id,
+        &staking_protocol::instruction::Unstake {
+            amount: 300_000,
+            request_time: 1_000_000,
+        }
+        .data(),
+        staking_protocol::accounts::Unstake {
+            user: user.pubkey(),
+            pool,
+            user_stake,
+            unstake_request: req1,
+            system_program: anchor_lang::solana_program::system_program::ID,
+        }
+        .to_account_metas(None),
+    );
+    send(&mut svm, ix1, &[&user]).unwrap();
+
+    // Другий unstake з іншим request_time — ок бо інший PDA
+    let (req2, _) = unstake_request_pda(&pool, &user.pubkey(), 1_000_001, &program_id);
+    let ix2 = Instruction::new_with_bytes(
+        program_id,
+        &staking_protocol::instruction::Unstake {
+            amount: 200_000,
+            request_time: 1_000_001,
+        }
+        .data(),
+        staking_protocol::accounts::Unstake {
+            user: user.pubkey(),
+            pool,
+            user_stake,
+            unstake_request: req2,
+            system_program: anchor_lang::solana_program::system_program::ID,
+        }
+        .to_account_metas(None),
+    );
+    send(&mut svm, ix2, &[&user]).unwrap();
+
+    // total_staked = 1_000_000 - 300_000 - 200_000 = 500_000
+    let pool_account = svm.get_account(&pool).unwrap();
+    let pool_data: staking_protocol::state::StakingPool =
+        anchor_lang::AccountDeserialize::try_deserialize(&mut pool_account.data.as_slice())
+            .unwrap();
+    assert_eq!(pool_data.total_staked, 500_000);
+}
+
+#[test]
 fn test_unstake_more_than_staked_fails() {
     let program_id = staking_protocol::id();
     let authority = Keypair::new();
@@ -215,11 +300,15 @@ fn test_unstake_more_than_staked_fails() {
 
     let (_stake_mint, pool, _vault) = setup_with_stake(&mut svm, &authority, &user, 1_000_000);
     let (user_stake, _) = user_stake_pda(&pool, &user.pubkey(), &program_id);
-    let (unstake_request, _) = unstake_request_pda(&pool, &user.pubkey(), &program_id);
+    let (unstake_request, _) = unstake_request_pda(&pool, &user.pubkey(), 1_000_000, &program_id);
 
     let ix = Instruction::new_with_bytes(
         program_id,
-        &staking_protocol::instruction::Unstake { amount: 2_000_000 }.data(),
+        &staking_protocol::instruction::Unstake {
+            amount: 2_000_000,
+            request_time: 1_000_000,
+        }
+        .data(),
         staking_protocol::accounts::Unstake {
             user: user.pubkey(),
             pool,

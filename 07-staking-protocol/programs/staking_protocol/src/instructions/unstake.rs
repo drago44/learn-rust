@@ -4,6 +4,7 @@ use crate::state::{StakingPool, UnstakeRequest, UserStake};
 use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
+#[instruction(amount: u64, request_time: i64)]
 pub struct Unstake<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
@@ -22,13 +23,13 @@ pub struct Unstake<'info> {
     )]
     pub user_stake: Account<'info, UserStake>,
 
-    // Один активний запит на вивід на юзера.
-    // Щоб створити новий — спочатку треба claim попереднього.
+    // Кожен unstake — окремий акаунт з унікальним timestamp.
+    // Можна мати кілька паралельних запитів одночасно.
     #[account(
         init,
         payer = user,
         space = 8 + 32 + 8 + 8 + 1,
-        seeds = [b"unstake", pool.key().as_ref(), user.key().as_ref()],
+        seeds = [b"unstake", pool.key().as_ref(), user.key().as_ref(), &request_time.to_le_bytes()],
         bump,
     )]
     pub unstake_request: Account<'info, UnstakeRequest>,
@@ -36,7 +37,7 @@ pub struct Unstake<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn unstake_handler(ctx: Context<Unstake>, amount: u64) -> Result<()> {
+pub fn unstake_handler(ctx: Context<Unstake>, amount: u64, _request_time: i64) -> Result<()> {
     require!(amount > 0, StakingError::ZeroAmount);
     require!(
         ctx.accounts.user_stake.amount_staked >= amount,
@@ -46,12 +47,11 @@ pub fn unstake_handler(ctx: Context<Unstake>, amount: u64) -> Result<()> {
     let pool = &mut ctx.accounts.pool;
     let user_stake = &mut ctx.accounts.user_stake;
     let unstake_request = &mut ctx.accounts.unstake_request;
-    let now = Clock::get()?.unix_timestamp;
 
     // Оновлюємо індекс ПЕРЕД зміною балансів
     update_reward_per_token(pool)?;
 
-    // Зменшуємо баланси — токени ще у vault, але вже "заброньовані" на вивід
+    // Зменшуємо баланси — токени ще у vault, але заброньовані на вивід
     pool.total_staked = pool
         .total_staked
         .checked_sub(amount)
@@ -62,10 +62,11 @@ pub fn unstake_handler(ctx: Context<Unstake>, amount: u64) -> Result<()> {
         .checked_sub(amount)
         .ok_or(StakingError::MathOverflow)?;
 
-    // Записуємо квиток — claim перевірить його через 7 днів
+    // Записуємо квиток — використовуємо реальний clock, не параметр клієнта
+    // request_time в параметрі — тільки для унікальності seeds
     unstake_request.owner = ctx.accounts.user.key();
     unstake_request.amount = amount;
-    unstake_request.request_time = now;
+    unstake_request.request_time = Clock::get()?.unix_timestamp;
     unstake_request.bump = ctx.bumps.unstake_request;
 
     Ok(())
