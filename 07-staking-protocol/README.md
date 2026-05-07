@@ -1,9 +1,53 @@
 # Staking Protocol (Solana / Anchor)
 
+## Live deployment (devnet)
+
+| Що | Адреса |
+|---|---|
+| **Program** | [`8TDLJ18auzqhoQTFNsnijVSYBJNxxWqhdAvFw2shqsud`](https://explorer.solana.com/address/8TDLJ18auzqhoQTFNsnijVSYBJNxxWqhdAvFw2shqsud?cluster=devnet) |
+| **IDL metadata** | [`4AynNrwjHXgNgZpuAjkQWFkvZVWzLm7t8zEW4XCjCBzj`](https://explorer.solana.com/address/4AynNrwjHXgNgZpuAjkQWFkvZVWzLm7t8zEW4XCjCBzj?cluster=devnet) |
+| **Cluster** | Solana devnet |
+| **Upgrade authority** | `HLHwDYucSncVFw31kWyfrddrXwfaqqQvuLhq95HXJm11` |
+
+### Live demo transactions
+
+Виконано через [`scripts/interact.ts`](./scripts/interact.ts) — повний lifecycle на живій мережі.
+
+| Інструкція | Транзакція |
+|---|---|
+| `initialize_pool` | [`dEy4gy2Y...`](https://explorer.solana.com/tx/dEy4gy2YxsoNSZpu43fLEBeoUqAe9jbkPrtmSGmGAHgHaWoCZu4gtLGyBG5tE9vwoNRdy4SnqHrCByxqQQ2WWUY?cluster=devnet) |
+| `stake(0.5)` | [`27zKGoVs...`](https://explorer.solana.com/tx/27zKGoVsbMaD9Ubb9h8YAjwAhuqrNxxM1r7SSwMfKR5cv7S5QCYmbrfP4WxgGrFaNrUJo9RcwymRZgkMVbnKojhR?cluster=devnet) |
+| `harvest` | [`5VG4QRHp...`](https://explorer.solana.com/tx/5VG4QRHpvbZAi2Xigg9uUx161M1MeN8nop9fXsLkmsr6Dexb9HaF3ChofM53kPFQsbtvJJozumeTNUjpevBtHaSB?cluster=devnet) |
+
+Створені акаунти, що можна оглянути в Explorer:
+
+| Акаунт | Адреса |
+|---|---|
+| Pool (state) | [`D6WH7uwS56AAjGm2YintihW9SfM5WpbUNaiJ544R44Lq`](https://explorer.solana.com/address/D6WH7uwS56AAjGm2YintihW9SfM5WpbUNaiJ544R44Lq?cluster=devnet) |
+| Vault (стейк-токени) | [`CQXqvbsWZcUk5XmNV8swhFbiSvxugAXe4p2tRNTDpx3A`](https://explorer.solana.com/address/CQXqvbsWZcUk5XmNV8swhFbiSvxugAXe4p2tRNTDpx3A?cluster=devnet) |
+| Reward vault | [`41EEevzFksfgGfnRLWeruoNNbmMh2EfjrUvhVrCPYVtz`](https://explorer.solana.com/address/41EEevzFksfgGfnRLWeruoNNbmMh2EfjrUvhVrCPYVtz?cluster=devnet) |
+| User stake position | [`4rjNJNnSVCfC7u33fjdnap66YVmsRPowQm7BUKFV6HZR`](https://explorer.solana.com/address/4rjNJNnSVCfC7u33fjdnap66YVmsRPowQm7BUKFV6HZR?cluster=devnet) |
+| Stake mint | [`9utJjckgnsbyDHqF8eaSQvA8hT4t7PbefLYtLwqncuWc`](https://explorer.solana.com/address/9utJjckgnsbyDHqF8eaSQvA8hT4t7PbefLYtLwqncuWc?cluster=devnet) |
+| Reward mint | [`2b5Z3EhYXuez4Bsk3YYQeFauTDrcXUJJtrxJSrmYFfUz`](https://explorer.solana.com/address/2b5Z3EhYXuez4Bsk3YYQeFauTDrcXUJJtrxJSrmYFfUz?cluster=devnet) |
+
+> **Доказ роботи accumulator-формули:** між `stake` і `harvest` транзаціями на devnet минуло ~3 секунди, юзер отримав `3000 reward units` = `3 sec × 1000 reward_rate × 100% pool share`. Math checks out on live chain.
+
+#### Як подивитись стан on-chain
+
+| Що подивитись | Де | На що дивитись |
+|---|---|---|
+| Скільки токенів реально заблоковано | [Vault](https://explorer.solana.com/address/CQXqvbsWZcUk5XmNV8swhFbiSvxugAXe4p2tRNTDpx3A?cluster=devnet) → таб **Tokens** | баланс `9utJjck...` має бути `0.500000` |
+| Бухгалтерія пулу | [Pool](https://explorer.solana.com/address/D6WH7uwS56AAjGm2YintihW9SfM5WpbUNaiJ544R44Lq?cluster=devnet) → таб **Anchor IDL Account Data** | `total_staked = 500000`, `reward_rate = 1000`, `reward_per_token_stored > 0` |
+| Позиція юзера | [User stake](https://explorer.solana.com/address/4rjNJNnSVCfC7u33fjdnap66YVmsRPowQm7BUKFV6HZR?cluster=devnet) → **Anchor IDL Account Data** | `owner` = твій гаманець, `amount_staked = 500000`, `pending_rewards = 0` (харвестено), `reward_debt > 0` |
+| Залишок reward-вoth | [Reward vault](https://explorer.solana.com/address/41EEevzFksfgGfnRLWeruoNNbmMh2EfjrUvhVrCPYVtz?cluster=devnet) → таб **Tokens** | `2b5Z3Eh...` = `999_997_000` (стартував з `1_000_000_000`, − `3000` за harvest) |
+| Подія `StakedEvent` | [Stake TX](https://explorer.solana.com/tx/27zKGoVsbMaD9Ubb9h8YAjwAhuqrNxxM1r7SSwMfKR5cv7S5QCYmbrfP4WxgGrFaNrUJo9RcwymRZgkMVbnKojhR?cluster=devnet) → секція **Logs** | `Program data: <base64>` — це наш `#[event]`, парситься через IDL |
+
+---
+
 > **Застереження.** Це **навчальний / портфоліо-проєкт**, написаний для демонстрації механіки on-chain стейкінгу та паттернів безпеки в Anchor.
 >
 > - **Не аудитований.** Жодної формальної перевірки не проводилось. Можливі помилки в логіці, обмеженнях акаунтів, арифметиці.
-> - **Не задеплоєний** на жоден публічний кластер (devnet/testnet/mainnet). Працює лише локально через LiteSVM-тести.
+> - **Задеплоєний на devnet** для демонстрації (адреси нижче). На mainnet не задеплоєний і без аудиту туди не піде.
 > - **Не для реальних коштів.** Не використовувати з токенами, що мають економічну вартість, без повного аудиту і ревізії економічної моделі.
 > - **Економічна модель умовна.** `reward_rate`, supply reward-токена, поповнення `reward_vault` — все на розсуд адміна. Програма не моделює стійкість пулу.
 > - **Адмін має значні повноваження** — може змінити `reward_rate` будь-коли. У продакшні цю роль зазвичай виконує мульти-сиг або DAO-governance, не один ключ.

@@ -9,7 +9,7 @@ use anchor_lang::prelude::*;
 
 pub use instructions::*;
 
-declare_id!("6drNm5QiLE2EHgGRhupGSZC7FLY3j1YYfUzNfin2SDkn");
+declare_id!("8TDLJ18auzqhoQTFNsnijVSYBJNxxWqhdAvFw2shqsud");
 
 #[program]
 pub mod staking_protocol {
