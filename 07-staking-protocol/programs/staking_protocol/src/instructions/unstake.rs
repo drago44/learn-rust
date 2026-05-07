@@ -37,7 +37,7 @@ pub struct Unstake<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn unstake_handler(ctx: Context<Unstake>, amount: u64, _request_time: i64) -> Result<()> {
+pub fn unstake_handler(ctx: Context<Unstake>, amount: u64, request_time: i64) -> Result<()> {
     require!(amount > 0, StakingError::ZeroAmount);
     require!(
         ctx.accounts.user_stake.amount_staked >= amount,
@@ -62,11 +62,13 @@ pub fn unstake_handler(ctx: Context<Unstake>, amount: u64, _request_time: i64) -
         .checked_sub(amount)
         .ok_or(StakingError::MathOverflow)?;
 
-    // Записуємо квиток — використовуємо реальний clock, не параметр клієнта
-    // request_time в параметрі — тільки для унікальності seeds
+    // Записуємо квиток.
+    // request_time = параметр (nonce/seed) — щоб claim міг ре-дерайвнути той самий PDA.
+    // created_at = реальний on-chain час — від нього рахуємо cooldown (атакер не впливає).
     unstake_request.owner = ctx.accounts.user.key();
     unstake_request.amount = amount;
-    unstake_request.request_time = Clock::get()?.unix_timestamp;
+    unstake_request.request_time = request_time;
+    unstake_request.created_at = Clock::get()?.unix_timestamp;
     unstake_request.bump = ctx.bumps.unstake_request;
 
     Ok(())

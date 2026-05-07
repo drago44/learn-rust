@@ -37,10 +37,12 @@ impl UserStake {
 pub struct UnstakeRequest {
     pub owner: Pubkey,     // хто створив запит
     pub amount: u64,       // скільки токенів виводять
-    pub request_time: i64, // unix timestamp коли створено
+    pub request_time: i64, // nonce з параметра клієнта — використовується тільки в seeds для унікальності PDA
+    pub created_at: i64,   // реальний on-chain Clock::get() — від нього тікає COOLDOWN_SECONDS
     pub bump: u8,
 }
 
 impl UnstakeRequest {
-    pub const SIZE: usize = 8 + 32 + 8 + 8 + 1;
+    // 8 disc + Pubkey + u64 + i64 + i64 + u8
+    pub const SIZE: usize = 8 + 32 + 8 + 8 + 8 + 1;
 }

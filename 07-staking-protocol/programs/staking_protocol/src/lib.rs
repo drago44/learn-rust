@@ -8,7 +8,7 @@ use anchor_lang::prelude::*;
 
 pub use instructions::*;
 
-declare_id!("3zt6or58N5Z82tsPV7qFz6PDmUX53awTTGMhJNErXjRD");
+declare_id!("FZ24TszdtKWgUGsBV3TiTNni3XzXMrde8JDK5eGtTP9j");
 
 #[program]
 pub mod staking_protocol {
@@ -28,5 +28,9 @@ pub mod staking_protocol {
 
     pub fn harvest(ctx: Context<Harvest>) -> Result<()> {
         harvest::harvest_handler(ctx)
+    }
+
+    pub fn claim(ctx: Context<Claim>) -> Result<()> {
+        claim::claim_handler(ctx)
     }
 }
