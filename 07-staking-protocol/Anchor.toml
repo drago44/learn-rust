@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-staking_protocol = "5VL2tMf1K4hf1GVKzo1Z3AjXAeF4XGMurm8AdjDC2FEv"
+staking_protocol = "3zt6or58N5Z82tsPV7qFz6PDmUX53awTTGMhJNErXjRD"
 
 [provider]
 cluster = "localnet"
