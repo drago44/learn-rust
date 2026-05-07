@@ -1,5 +1,5 @@
 use crate::error::StakingError;
-use crate::helpers::update_reward_per_token;
+use crate::helpers::accrue_user_rewards;
 use crate::state::{StakingPool, UserStake};
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{
@@ -21,7 +21,7 @@ pub struct Stake<'info> {
     #[account(
         init_if_needed,
         payer = user,
-        space = 8 + 32 + 8 + 16 + 1,
+        space = UserStake::SIZE,
         seeds = [b"user", pool.key().as_ref(), user.key().as_ref()],
         bump,
     )]
@@ -55,17 +55,16 @@ pub fn stake_handler(ctx: Context<Stake>, amount: u64) -> Result<()> {
     let pool = &mut ctx.accounts.pool;
     let user_stake = &mut ctx.accounts.user_stake;
 
-    // Оновлюємо індекс ПЕРЕД зміною балансів
-    update_reward_per_token(pool)?;
-
-    // Перший стейк цього юзера — ініціалізуємо поля
+    // Перший стейк цього юзера — ініціалізуємо ідентифікаційні поля.
+    // Решту (reward_debt, amount_staked, pending_rewards) дефолт-нулі від init.
     if user_stake.owner == Pubkey::default() {
         user_stake.owner = ctx.accounts.user.key();
         user_stake.bump = ctx.bumps.user_stake;
     }
 
-    // Фіксуємо поточний індекс — pending rewards = 0 одразу після стейку
-    user_stake.reward_debt = pool.reward_per_token_stored;
+    // Settle: акумулюємо все що юзер заробив, перш ніж міняти amount_staked.
+    // При першому стейку amount_staked = 0, тому earned = 0 — безпечно.
+    accrue_user_rewards(pool, user_stake)?;
 
     // CPI: перевести токени від юзера до vault
     transfer_checked(

@@ -16,6 +16,10 @@ fn vault_pda(pool: &Pubkey, program_id: &Pubkey) -> (Pubkey, u8) {
     Pubkey::find_program_address(&[b"vault", pool.as_ref()], program_id)
 }
 
+fn reward_vault_pda(pool: &Pubkey, program_id: &Pubkey) -> (Pubkey, u8) {
+    Pubkey::find_program_address(&[b"reward_vault", pool.as_ref()], program_id)
+}
+
 fn user_stake_pda(pool: &Pubkey, user: &Pubkey, program_id: &Pubkey) -> (Pubkey, u8) {
     Pubkey::find_program_address(&[b"user", pool.as_ref(), user.as_ref()], program_id)
 }
@@ -128,6 +132,7 @@ fn setup_with_stake(
     let reward_mint = create_mint(svm, authority, 6);
     let (pool, _) = pool_pda(&stake_mint, &program_id);
     let (vault, _) = vault_pda(&pool, &program_id);
+    let (reward_vault, _) = reward_vault_pda(&pool, &program_id);
 
     let ix = Instruction::new_with_bytes(
         program_id,
@@ -136,6 +141,7 @@ fn setup_with_stake(
             authority: authority.pubkey(),
             pool,
             vault,
+            reward_vault,
             stake_mint,
             reward_mint,
             token_program: spl_token::id(),

@@ -1,5 +1,5 @@
 use crate::error::StakingError;
-use crate::helpers::update_reward_per_token;
+use crate::helpers::accrue_user_rewards;
 use crate::state::{StakingPool, UnstakeRequest, UserStake};
 use anchor_lang::prelude::*;
 
@@ -28,7 +28,7 @@ pub struct Unstake<'info> {
     #[account(
         init,
         payer = user,
-        space = 8 + 32 + 8 + 8 + 1,
+        space = UnstakeRequest::SIZE,
         seeds = [b"unstake", pool.key().as_ref(), user.key().as_ref(), &request_time.to_le_bytes()],
         bump,
     )]
@@ -48,8 +48,8 @@ pub fn unstake_handler(ctx: Context<Unstake>, amount: u64, _request_time: i64) -
     let user_stake = &mut ctx.accounts.user_stake;
     let unstake_request = &mut ctx.accounts.unstake_request;
 
-    // Оновлюємо індекс ПЕРЕД зміною балансів
-    update_reward_per_token(pool)?;
+    // Settle rewards перед зменшенням amount_staked, щоб не втратити нараховане.
+    accrue_user_rewards(pool, user_stake)?;
 
     // Зменшуємо баланси — токени ще у vault, але заброньовані на вивід
     pool.total_staked = pool

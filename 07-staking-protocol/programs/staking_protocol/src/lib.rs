@@ -8,7 +8,7 @@ use anchor_lang::prelude::*;
 
 pub use instructions::*;
 
-declare_id!("9RVXkeVnvNJs8Kw5t9cwWkxqpJem1TMTS518zhgk22UF");
+declare_id!("5VL2tMf1K4hf1GVKzo1Z3AjXAeF4XGMurm8AdjDC2FEv");
 
 #[program]
 pub mod staking_protocol {
@@ -24,5 +24,9 @@ pub mod staking_protocol {
 
     pub fn unstake(ctx: Context<Unstake>, amount: u64, request_time: i64) -> Result<()> {
         unstake::unstake_handler(ctx, amount, request_time)
+    }
+
+    pub fn harvest(ctx: Context<Harvest>) -> Result<()> {
+        harvest::harvest_handler(ctx)
     }
 }

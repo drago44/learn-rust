@@ -10,7 +10,7 @@ pub struct InitializePool<'info> {
     #[account(
         init,
         payer = authority,
-        space = 8 + 32 + 32 + 32 + 32 + 8 + 8 + 16 + 8 + 1,
+        space = StakingPool::SIZE,
         seeds = [b"pool", stake_mint.key().as_ref()],
         bump,
     )]
@@ -28,6 +28,19 @@ pub struct InitializePool<'info> {
     )]
     pub vault: InterfaceAccount<'info, TokenAccount>,
 
+    // reward_vault — окремий vault для reward токенів; authority = pool PDA.
+    // Адмін наповнює його окремо (mint_to / transfer) після ініціалізації.
+    #[account(
+        init,
+        payer = authority,
+        token::mint = reward_mint,
+        token::authority = pool,
+        token::token_program = token_program,
+        seeds = [b"reward_vault", pool.key().as_ref()],
+        bump,
+    )]
+    pub reward_vault: InterfaceAccount<'info, TokenAccount>,
+
     pub stake_mint: InterfaceAccount<'info, Mint>,
     pub reward_mint: InterfaceAccount<'info, Mint>,
 
@@ -42,6 +55,7 @@ pub fn initialize_pool_handler(ctx: Context<InitializePool>, reward_rate: u64) -
     pool.stake_mint = ctx.accounts.stake_mint.key();
     pool.reward_mint = ctx.accounts.reward_mint.key();
     pool.vault = ctx.accounts.vault.key();
+    pool.reward_vault = ctx.accounts.reward_vault.key();
     pool.total_staked = 0;
     pool.reward_rate = reward_rate;
     pool.reward_per_token_stored = 0;
