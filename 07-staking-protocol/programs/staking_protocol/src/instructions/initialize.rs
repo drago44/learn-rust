@@ -1,3 +1,4 @@
+use crate::events::PoolInitializedEvent;
 use crate::state::StakingPool;
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
@@ -61,6 +62,15 @@ pub fn initialize_pool_handler(ctx: Context<InitializePool>, reward_rate: u64) -
     pool.reward_per_token_stored = 0;
     pool.last_update_time = Clock::get()?.unix_timestamp;
     pool.bump = ctx.bumps.pool;
+
+    emit!(PoolInitializedEvent {
+        authority: pool.authority,
+        pool: pool.key(),
+        stake_mint: pool.stake_mint,
+        reward_mint: pool.reward_mint,
+        reward_rate,
+        timestamp: pool.last_update_time,
+    });
 
     Ok(())
 }

@@ -1,4 +1,5 @@
 use crate::error::StakingError;
+use crate::events::StakedEvent;
 use crate::helpers::accrue_user_rewards;
 use crate::state::{StakingPool, UserStake};
 use anchor_lang::prelude::*;
@@ -90,6 +91,15 @@ pub fn stake_handler(ctx: Context<Stake>, amount: u64) -> Result<()> {
         .amount_staked
         .checked_add(amount)
         .ok_or(StakingError::MathOverflow)?;
+
+    emit!(StakedEvent {
+        user: ctx.accounts.user.key(),
+        pool: pool.key(),
+        amount,
+        user_total_staked: user_stake.amount_staked,
+        pool_total_staked: pool.total_staked,
+        timestamp: Clock::get()?.unix_timestamp,
+    });
 
     Ok(())
 }

@@ -1,5 +1,6 @@
 use crate::constants::COOLDOWN_SECONDS;
 use crate::error::StakingError;
+use crate::events::ClaimedEvent;
 use crate::state::{StakingPool, UnstakeRequest};
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{
@@ -89,6 +90,14 @@ pub fn claim_handler(ctx: Context<Claim>) -> Result<()> {
         amount,
         ctx.accounts.stake_mint.decimals,
     )?;
+
+    emit!(ClaimedEvent {
+        owner: ctx.accounts.owner.key(),
+        pool: ctx.accounts.pool.key(),
+        unstake_request: ctx.accounts.unstake_request.key(),
+        amount,
+        timestamp: now,
+    });
 
     // Закриття акаунта (rent → owner) робить Anchor через `close = owner`.
     Ok(())

@@ -1,4 +1,5 @@
 use crate::error::StakingError;
+use crate::events::UnstakeRequestedEvent;
 use crate::helpers::accrue_user_rewards;
 use crate::state::{StakingPool, UnstakeRequest, UserStake};
 use anchor_lang::prelude::*;
@@ -70,6 +71,16 @@ pub fn unstake_handler(ctx: Context<Unstake>, amount: u64, request_time: i64) ->
     unstake_request.request_time = request_time;
     unstake_request.created_at = Clock::get()?.unix_timestamp;
     unstake_request.bump = ctx.bumps.unstake_request;
+
+    emit!(UnstakeRequestedEvent {
+        user: ctx.accounts.user.key(),
+        pool: pool.key(),
+        unstake_request: unstake_request.key(),
+        amount,
+        user_remaining_staked: user_stake.amount_staked,
+        pool_total_staked: pool.total_staked,
+        created_at: unstake_request.created_at,
+    });
 
     Ok(())
 }

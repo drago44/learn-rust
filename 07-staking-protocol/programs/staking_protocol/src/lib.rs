@@ -1,5 +1,6 @@
 pub mod constants;
 pub mod error;
+pub mod events;
 pub mod helpers;
 pub mod instructions;
 pub mod state;
@@ -8,7 +9,7 @@ use anchor_lang::prelude::*;
 
 pub use instructions::*;
 
-declare_id!("FZ24TszdtKWgUGsBV3TiTNni3XzXMrde8JDK5eGtTP9j");
+declare_id!("6drNm5QiLE2EHgGRhupGSZC7FLY3j1YYfUzNfin2SDkn");
 
 #[program]
 pub mod staking_protocol {
@@ -32,5 +33,9 @@ pub mod staking_protocol {
 
     pub fn claim(ctx: Context<Claim>) -> Result<()> {
         claim::claim_handler(ctx)
+    }
+
+    pub fn update_reward_rate(ctx: Context<UpdateRewardRate>, new_rate: u64) -> Result<()> {
+        update_reward_rate::update_reward_rate_handler(ctx, new_rate)
     }
 }

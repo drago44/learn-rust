@@ -1,4 +1,5 @@
 use crate::error::StakingError;
+use crate::events::HarvestedEvent;
 use crate::helpers::accrue_user_rewards;
 use crate::state::{StakingPool, UserStake};
 use anchor_lang::prelude::*;
@@ -72,8 +73,11 @@ pub fn harvest_handler(ctx: Context<Harvest>) -> Result<()> {
 
     // CPI: переводимо reward токени з reward_vault до юзера.
     // Authority = pool PDA, тож підписуємо seeds-ами пулу.
+    // Капчу всі потрібні поля з `pool` ДО CPI, щоб звільнити mutable borrow
+    // (інакше `ctx.accounts.pool.to_account_info()` нижче конфліктуватиме).
     let stake_mint_key = pool.stake_mint;
     let pool_bump = pool.bump;
+    let pool_key = pool.key();
     let signer_seeds: &[&[&[u8]]] = &[&[b"pool", stake_mint_key.as_ref(), &[pool_bump]]];
 
     transfer_checked(
@@ -90,6 +94,13 @@ pub fn harvest_handler(ctx: Context<Harvest>) -> Result<()> {
         amount,
         ctx.accounts.reward_mint.decimals,
     )?;
+
+    emit!(HarvestedEvent {
+        user: ctx.accounts.user.key(),
+        pool: pool_key,
+        amount,
+        timestamp: Clock::get()?.unix_timestamp,
+    });
 
     Ok(())
 }
